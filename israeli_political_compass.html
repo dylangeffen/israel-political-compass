@@ -776,6 +776,168 @@
     color: #0d47a1;
   }
 
+  /* ===== SHARE CARD ===== */
+  .share-card-container {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .share-card-container.active { display: flex; }
+
+  .share-card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+  }
+
+  .share-card .share-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0d47a1;
+    margin-bottom: 5px;
+  }
+
+  .share-card .share-subtitle {
+    font-size: 0.8rem;
+    color: #5a6a7a;
+    margin-bottom: 15px;
+  }
+
+  .share-card canvas { border-radius: 10px; margin-bottom: 15px; }
+
+  .share-card .share-party {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 5px 0;
+  }
+
+  .share-card .share-pct {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #0d47a1;
+  }
+
+  .share-card .share-url {
+    font-size: 0.75rem;
+    color: #8a8aaa;
+    margin-top: 10px;
+  }
+
+  .share-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: center;
+  }
+
+  .share-btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .share-btn:hover { transform: scale(1.05); }
+  .share-btn.download { background: #0d47a1; color: white; }
+  .share-btn.close-share { background: var(--card-border); color: var(--text); }
+
+  /* ===== ANONYMOUS STATS ===== */
+  .stats-section {
+    margin-bottom: 30px;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    min-width: 100px;
+    text-align: left;
+    color: var(--text-dim);
+  }
+
+  .stat-bar-outer {
+    flex: 1;
+    height: 24px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .stat-bar-inner {
+    height: 100%;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: white;
+    transition: width 1s ease;
+  }
+
+  /* ===== KNESSET SIMULATOR ===== */
+  .knesset-hemicycle {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .knesset-row {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+    margin-bottom: 3px;
+  }
+
+  .knesset-seat {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: all 0.3s;
+  }
+
+  .knesset-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+  }
+
+  .knesset-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+  }
+
+  .knesset-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
   .restart-btn {
     display: block;
     margin: 30px auto;
@@ -1127,7 +1289,42 @@
 
   <div id="summaryCard" class="summary-card"></div>
 
-  <button class="restart-btn" onclick="restart()">התחל מחדש</button>
+  <div class="chart-section">
+    <h2>הכנסת החלומית שלך</h2>
+    <p class="chart-desc">חלוקת מושבים לפי ההתאמה שלך למפלגות (120 מושבים)</p>
+    <div class="chart-container">
+      <div id="knessetSim" class="knesset-hemicycle"></div>
+    </div>
+    <div id="knessetLegend" class="knesset-legend"></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>איך אחרים ענו</h2>
+    <p class="chart-desc">סטטיסטיקות אנונימיות מכל מי שמילא את השאלון</p>
+    <div id="anonStats" class="stats-section"></div>
+  </div>
+
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:30px 0;">
+    <button class="btn" onclick="openShareCard()" style="padding:14px 30px;font-size:1rem;">שתף תוצאות</button>
+    <button class="restart-btn" onclick="restart()">התחל מחדש</button>
+  </div>
+
+  <!-- Share overlay -->
+  <div class="share-card-container" id="shareOverlay">
+    <div class="share-card" id="shareCardContent">
+      <div class="share-title">המצפן הפוליטי</div>
+      <div class="share-subtitle">התוצאות שלי</div>
+      <canvas id="shareRadar" width="280" height="280"></canvas>
+      <img id="shareImg" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid #0d47a1;" src="" alt="">
+      <div class="share-party" id="shareParty"></div>
+      <div class="share-pct" id="sharePct"></div>
+      <div class="share-url">dylangeffen.github.io/israel-political-compass</div>
+      <div class="share-buttons">
+        <button class="share-btn download" onclick="downloadShareCard()">הורד תמונה</button>
+        <button class="share-btn close-share" onclick="closeShareCard()">סגור</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1592,8 +1789,17 @@ function showResults() {
   drawAxisBreakdown(scores, ranked);
   drawPartyInfoCards(ranked);
   drawInfluencerCards(scores);
+  drawKnessetSim(ranked);
   drawAgreement();
   drawSummary(scores, ranked);
+
+  // Save for share card
+  savedScores = scores;
+  savedBest = ranked[0];
+
+  // Save anonymous stats
+  saveStats(scores, ranked[0]);
+  drawAnonStats();
 }
 
 // ===== RADAR CHART =====
@@ -2444,6 +2650,235 @@ function restart() {
   document.getElementById('priorityPhase').style.display = 'none';
   document.getElementById('welcome').style.display = 'flex';
   window.scrollTo(0, 0);
+}
+
+// ===== SHARE CARD =====
+let savedScores = null;
+let savedBest = null;
+
+function openShareCard() {
+  document.getElementById('shareOverlay').classList.add('active');
+  if (savedBest) {
+    document.getElementById('shareImg').src = savedBest.img;
+    document.getElementById('shareParty').textContent = savedBest.name;
+    document.getElementById('sharePct').textContent = savedBest.match + '%';
+    drawMiniRadar(savedScores, savedBest);
+  }
+}
+
+function closeShareCard() {
+  document.getElementById('shareOverlay').classList.remove('active');
+}
+
+function drawMiniRadar(scores, bestParty) {
+  const canvas = document.getElementById('shareRadar');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = W/2 - 40;
+  ctx.clearRect(0, 0, W, H);
+
+  const axes = ['econ', 'auth', 'relig', 'def'];
+  const labels = ['כלכלה', 'סמכות', 'דת', 'ביטחון'];
+  const n = 4;
+
+  // Grid
+  for (let level = 1; level <= 5; level++) {
+    const r = (level/5) * R;
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const angle = (Math.PI*2*(i%n))/n - Math.PI/2;
+      const x = cx + Math.cos(angle)*r, y = cy + Math.sin(angle)*r;
+      i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.stroke();
+  }
+
+  // Labels
+  ctx.font = '600 11px Heebo';
+  ctx.fillStyle = '#5a6a7a';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI*2*i)/n - Math.PI/2;
+    ctx.fillText(labels[i], cx + Math.cos(angle)*(R+22), cy + Math.sin(angle)*(R+22) + 4);
+  }
+
+  // User polygon
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const idx = i%n;
+    const angle = (Math.PI*2*idx)/n - Math.PI/2;
+    const val = scores[axes[idx]]/10;
+    const x = cx + Math.cos(angle)*val*R, y = cy + Math.sin(angle)*val*R;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(13,71,161,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#0d47a1';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function downloadShareCard() {
+  const card = document.getElementById('shareCardContent');
+  // Use canvas to capture
+  const canvas = document.createElement('canvas');
+  const scale = 2;
+  canvas.width = 400 * scale;
+  canvas.height = 500 * scale;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+
+  // Draw background
+  ctx.fillStyle = '#f0f4f8';
+  ctx.fillRect(0, 0, 400, 500);
+
+  // Blue stripes
+  ctx.fillStyle = 'rgba(13,71,161,0.1)';
+  ctx.fillRect(0, 0, 400, 40);
+  ctx.fillRect(0, 460, 400, 40);
+
+  // Title
+  ctx.font = '800 24px Heebo';
+  ctx.fillStyle = '#0d47a1';
+  ctx.textAlign = 'center';
+  ctx.fillText('המצפן הפוליטי', 200, 80);
+
+  // Copy mini radar
+  const radarCanvas = document.getElementById('shareRadar');
+  ctx.drawImage(radarCanvas, 60, 95, 280, 280);
+
+  // Party name + match
+  ctx.font = '700 22px Heebo';
+  ctx.fillStyle = '#1a2a3a';
+  ctx.fillText(savedBest.name, 200, 410);
+  ctx.font = '900 32px Heebo';
+  ctx.fillStyle = '#0d47a1';
+  ctx.fillText(savedBest.match + '%', 200, 445);
+
+  // URL
+  ctx.font = '400 10px Heebo';
+  ctx.fillStyle = '#8a8aaa';
+  ctx.fillText('dylangeffen.github.io/israel-political-compass', 200, 480);
+
+  // Download
+  const link = document.createElement('a');
+  link.download = 'hamatzpen-results.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ===== ANONYMOUS STATS =====
+function saveStats(scores, bestParty) {
+  try {
+    const stats = JSON.parse(localStorage.getItem('matzpen_stats') || '{"total":0,"parties":{},"coalition":0,"opposition":0,"axes":{"econ":[],"auth":[],"relig":[],"def":[]}}');
+    stats.total++;
+    stats.parties[bestParty.name] = (stats.parties[bestParty.name] || 0) + 1;
+    const agreement = calculateLawsAgreement();
+    if (agreement.coalition > agreement.opposition) stats.coalition++;
+    else stats.opposition++;
+    for (const axis of ['econ','auth','relig','def']) {
+      stats.axes[axis].push(Math.round(scores[axis] * 10) / 10);
+      if (stats.axes[axis].length > 500) stats.axes[axis] = stats.axes[axis].slice(-500);
+    }
+    localStorage.setItem('matzpen_stats', JSON.stringify(stats));
+    return stats;
+  } catch(e) { return null; }
+}
+
+function drawAnonStats() {
+  try {
+    const stats = JSON.parse(localStorage.getItem('matzpen_stats') || '{}');
+    if (!stats.total || stats.total < 2) {
+      document.getElementById('anonStats').innerHTML = '<p style="text-align:center;color:var(--text-dim);">צריך לפחות 2 משתתפים כדי להציג סטטיסטיקות. שתפו עם חברים!</p>';
+      return;
+    }
+
+    let html = `<p style="text-align:center;color:var(--text-dim);margin-bottom:15px;">מבוסס על ${stats.total} משתתפים</p>`;
+
+    // Top parties
+    const sortedParties = Object.entries(stats.parties).sort((a,b) => b[1]-a[1]).slice(0, 5);
+    html += '<h4 style="margin-bottom:10px;color:#0d47a1;">המפלגות הפופולריות</h4>';
+    sortedParties.forEach(([name, count]) => {
+      const pct = Math.round(count / stats.total * 100);
+      const party = parties.find(p => p.name === name);
+      const color = party ? party.color : '#0d47a1';
+      html += `<div class="stat-row">
+        <span class="stat-label">${name}</span>
+        <div class="stat-bar-outer">
+          <div class="stat-bar-inner" style="width:${pct}%;background:${color};">${pct}%</div>
+        </div>
+      </div>`;
+    });
+
+    // Coalition vs opposition
+    const coalPct = Math.round(stats.coalition / stats.total * 100);
+    const oppPct = 100 - coalPct;
+    html += `<h4 style="margin:20px 0 10px;color:#0d47a1;">קואליציה מול אופוזיציה</h4>
+      <div class="stat-row">
+        <span class="stat-label">קואליציה</span>
+        <div class="stat-bar-outer"><div class="stat-bar-inner" style="width:${coalPct}%;background:linear-gradient(90deg,#e17055,#d63031);">${coalPct}%</div></div>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">אופוזיציה</span>
+        <div class="stat-bar-outer"><div class="stat-bar-inner" style="width:${oppPct}%;background:linear-gradient(90deg,#0984e3,#6c5ce7);">${oppPct}%</div></div>
+      </div>`;
+
+    document.getElementById('anonStats').innerHTML = html;
+  } catch(e) {
+    document.getElementById('anonStats').innerHTML = '<p style="text-align:center;color:var(--text-dim);">לא ניתן לטעון סטטיסטיקות</p>';
+  }
+}
+
+// ===== KNESSET SIMULATOR =====
+function drawKnessetSim(ranked) {
+  // Allocate 120 seats based on match percentages
+  const top = ranked.filter(p => p.match > 30);
+  const totalMatch = top.reduce((s, p) => s + p.match, 0);
+  let seats = top.map(p => ({
+    ...p,
+    seats: Math.max(1, Math.round((p.match / totalMatch) * 120))
+  }));
+
+  // Adjust to exactly 120
+  let total = seats.reduce((s, p) => s + p.seats, 0);
+  while (total > 120) { seats[seats.length-1].seats--; total--; }
+  while (total < 120) { seats[0].seats++; total++; }
+
+  // Remove parties with 0 seats
+  seats = seats.filter(p => p.seats > 0);
+
+  // Build hemicycle rows (5 rows, back to front)
+  const rows = [30, 28, 24, 22, 16];
+  let allSeats = [];
+  seats.forEach(p => {
+    for (let i = 0; i < p.seats; i++) allSeats.push(p);
+  });
+
+  let html = '';
+  let seatIdx = 0;
+  rows.forEach((rowSize, ri) => {
+    html += '<div class="knesset-row">';
+    for (let i = 0; i < rowSize && seatIdx < allSeats.length; i++) {
+      const p = allSeats[seatIdx++];
+      html += `<div class="knesset-seat" style="background:${p.color};" title="${p.name} (${p.seats})"></div>`;
+    }
+    html += '</div>';
+  });
+
+  document.getElementById('knessetSim').innerHTML = html;
+
+  // Legend
+  let legendHtml = '';
+  seats.forEach(p => {
+    legendHtml += `<div class="knesset-legend-item">
+      <div class="knesset-legend-dot" style="background:${p.color};"></div>
+      <span>${p.name} (${p.seats})</span>
+    </div>`;
+  });
+  document.getElementById('knessetLegend').innerHTML = legendHtml;
 }
 
 // ===== UTILS =====
