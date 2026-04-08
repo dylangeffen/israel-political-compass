@@ -1,0 +1,2475 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>המצפן הפוליטי הישראלי</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --card-border: #d0dbe8;
+    --primary: #0d47a1;
+    --primary-light: #1976D2;
+    --secondary: #1565C0;
+    --accent: #0277BD;
+    --text: #1a2a3a;
+    --text-dim: #5a6a7a;
+    --econ-color: #c62828;
+    --auth-color: #0d47a1;
+    --relig-color: #2e7d32;
+    --def-color: #1565c0;
+    --success: #2e7d32;
+    --warning: #e65100;
+  }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Israeli flag waving background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      /* Top blue stripe - bold */
+      linear-gradient(180deg, rgba(13,71,161,0.18) 0%, rgba(13,71,161,0.10) 10%, rgba(13,71,161,0.04) 16%, transparent 22%),
+      /* Bottom blue stripe - bold */
+      linear-gradient(0deg, rgba(13,71,161,0.18) 0%, rgba(13,71,161,0.10) 10%, rgba(13,71,161,0.04) 16%, transparent 22%),
+      /* Star of David center glow */
+      radial-gradient(ellipse at 50% 50%, rgba(13,71,161,0.06) 0%, transparent 40%);
+    z-index: -1;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+      /* Waving fabric folds */
+      repeating-linear-gradient(
+        95deg,
+        transparent 0%,
+        rgba(13,71,161,0.03) 5%,
+        transparent 10%,
+        rgba(13,71,161,0.05) 15%,
+        transparent 20%,
+        rgba(13,71,161,0.02) 25%,
+        transparent 30%
+      ),
+      /* Light shimmer diagonal */
+      linear-gradient(
+        120deg,
+        transparent 0%,
+        rgba(255,255,255,0.5) 20%,
+        transparent 40%,
+        rgba(255,255,255,0.3) 60%,
+        transparent 80%
+      );
+    z-index: -1;
+    animation: flagWave 6s ease-in-out infinite;
+  }
+
+  @keyframes flagWave {
+    0%, 100% { transform: translateX(0) skewX(0deg); opacity: 0.7; }
+    15% { transform: translateX(-15px) skewX(1deg); opacity: 1; }
+    35% { transform: translateX(10px) skewX(-0.8deg); opacity: 0.6; }
+    55% { transform: translateX(-8px) skewX(0.6deg); opacity: 0.9; }
+    75% { transform: translateX(12px) skewX(-0.5deg); opacity: 0.7; }
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* ===== WELCOME SCREEN ===== */
+  #welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    animation: fadeIn 0.8s ease;
+    position: relative;
+  }
+
+  #welcome::before {
+    content: '✡';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 30rem;
+    color: rgba(13,71,161,0.07);
+    z-index: -1;
+    pointer-events: none;
+    animation: starPulse 10s ease-in-out infinite;
+  }
+
+  @keyframes starPulse {
+    0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05) rotate(3deg); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    margin-bottom: 40px;
+    max-width: 500px;
+    line-height: 1.8;
+  }
+
+  .axes-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 40px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .axis-card {
+    background: var(--card);
+    border: none;
+    border-radius: 12px;
+    padding: 15px 15px 15px 15px;
+    text-align: center;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .axis-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--card-border);
+  }
+
+  .axis-card .icon { font-size: 1.8rem; margin-bottom: 5px; }
+  .axis-card .label { font-size: 0.9rem; font-weight: 600; }
+  .axis-card .range { font-size: 0.75rem; color: var(--text-dim); margin-top: 3px; }
+
+  .axis-card:nth-child(1)::before { background: var(--econ-color); }
+  .axis-card:nth-child(2)::before { background: var(--auth-color); }
+  .axis-card:nth-child(3)::before { background: var(--relig-color); }
+  .axis-card:nth-child(4)::before { background: var(--def-color); }
+
+  .btn {
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    color: white;
+    border: none;
+    padding: 16px 48px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(13,71,161,0.3);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  /* ===== QUIZ SCREEN ===== */
+  #quiz {
+    display: none;
+    min-height: 100vh;
+    padding-top: 30px;
+  }
+
+  .progress-container {
+    position: sticky;
+    top: 0;
+    background: rgba(240,244,248,0.95);
+    backdrop-filter: blur(10px);
+    padding: 15px 0;
+    z-index: 100;
+    margin-bottom: 30px;
+  }
+
+  .progress-bar-bg {
+    height: 8px;
+    background: var(--card);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0d47a1, #1976D2);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .progress-text .axis-tag {
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .question-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 35px;
+    margin-bottom: 20px;
+    animation: slideIn 0.4s ease;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .question-number {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  .question-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.7;
+    margin-bottom: 25px;
+  }
+
+  .likert-options {
+    display: flex;
+    gap: 10px;
+    flex-direction: row-reverse;
+  }
+
+  .likert-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: 2px solid var(--card-border);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+
+  .likert-btn:hover {
+    border-color: var(--primary);
+    background: rgba(13,71,161,0.06);
+  }
+
+  .likert-btn.selected {
+    border-color: var(--primary);
+    background: rgba(13,71,161,0.1);
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .nav-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 15px;
+  }
+
+  .btn-nav {
+    padding: 12px 30px;
+    border: 2px solid var(--card-border);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-nav:hover {
+    border-color: var(--primary);
+    background: rgba(13,71,161,0.06);
+  }
+
+  .btn-nav.primary {
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    border: none;
+    color: white;
+  }
+
+  .btn-nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* ===== RESULTS SCREEN ===== */
+  #results {
+    display: none;
+    padding-top: 30px;
+    padding-bottom: 60px;
+    animation: fadeIn 0.8s ease;
+  }
+
+  .results-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .results-header h1 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+
+  .match-card {
+    background: linear-gradient(135deg, rgba(13,71,161,0.06), rgba(25,118,210,0.04));
+    border: 2px solid #1976D2;
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 20px rgba(13,71,161,0.1);
+  }
+
+  .match-card .leader-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #1976D2;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  }
+
+  .match-card .party-name {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 5px;
+  }
+
+  .match-card .match-pct {
+    font-size: 3rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .match-card .match-label {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+  }
+
+  .top-matches {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 40px;
+  }
+
+  .top-match-item {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+  }
+
+  .top-match-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+  .top-match-item .leader-thumb {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--card-border);
+    margin-bottom: 8px;
+  }
+
+  .top-match-item .rank { font-size: 0.8rem; color: var(--text-dim); }
+  .top-match-item .name { font-size: 1.1rem; font-weight: 700; margin: 5px 0; }
+  .top-match-item .pct { font-size: 1.4rem; font-weight: 800; color: #0d47a1; }
+  .top-match-item .threshold-warning {
+    font-size: 0.7rem;
+    color: var(--warning);
+    margin-top: 5px;
+  }
+
+  .chart-section {
+    margin-bottom: 40px;
+  }
+
+  .chart-section h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+
+  .chart-section .chart-desc {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-bottom: 15px;
+  }
+
+  .chart-container {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  canvas {
+    max-width: 100%;
+  }
+
+  /* Axis breakdown bars */
+  .axis-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .axis-row {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .axis-row .axis-title {
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .axis-bar-container {
+    position: relative;
+    height: 30px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 15px;
+    overflow: visible;
+    margin: 10px 0;
+  }
+
+  .axis-bar-fill {
+    height: 100%;
+    border-radius: 15px;
+    transition: width 1s ease;
+  }
+
+  .axis-marker {
+    position: absolute;
+    top: -8px;
+    width: 20px;
+    height: 46px;
+    border: 3px solid white;
+    border-radius: 6px;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  .axis-marker.user-marker {
+    background: rgba(0,0,0,0.2);
+    border-color: white;
+  }
+
+  .axis-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  /* Summary */
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 30px;
+    line-height: 1.8;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .summary-card h2 { margin-bottom: 15px; }
+
+  /* Party legend for compass */
+  .compass-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  /* ===== PARTY INFO CARDS ===== */
+  .party-info-cards {
+    margin-bottom: 40px;
+  }
+
+  .party-info-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s;
+  }
+
+  .party-info-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+
+  .party-info-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .party-info-header img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--card-border);
+    flex-shrink: 0;
+  }
+
+  .party-info-header .info-title {
+    flex: 1;
+  }
+
+  .party-info-header .info-title .party-name-sm {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .party-info-header .info-title .leader-name-sm {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .party-info-header .match-badge {
+    background: rgba(13,71,161,0.08);
+    color: #0d47a1;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .party-info-header .expand-arrow {
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+  }
+
+  .party-info-card.expanded .expand-arrow {
+    transform: rotate(180deg);
+  }
+
+  .party-info-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .party-info-card.expanded .party-info-body {
+    max-height: 800px;
+  }
+
+  .party-info-content {
+    padding: 0 20px 20px 20px;
+    border-top: 1px solid var(--card-border);
+  }
+
+  .info-section {
+    margin-top: 14px;
+  }
+
+  .info-section h4 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #0d47a1;
+    margin-bottom: 5px;
+  }
+
+  .info-section p {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .info-members {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 5px;
+  }
+
+  .member-tag {
+    background: rgba(13,71,161,0.06);
+    border: 1px solid rgba(13,71,161,0.12);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text);
+  }
+
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .pros-cons .pro, .pros-cons .con {
+    font-size: 0.83rem;
+    line-height: 1.5;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .pros-cons .pro {
+    background: rgba(46,125,50,0.06);
+    border: 1px solid rgba(46,125,50,0.15);
+  }
+
+  .pros-cons .con {
+    background: rgba(198,40,40,0.06);
+    border: 1px solid rgba(198,40,40,0.15);
+  }
+
+  .pros-cons .pro h5 { color: #2e7d32; font-size: 0.8rem; margin-bottom: 4px; }
+  .pros-cons .con h5 { color: #c62828; font-size: 0.8rem; margin-bottom: 4px; }
+
+  @media (max-width: 600px) {
+    .pros-cons { grid-template-columns: 1fr; }
+  }
+
+  /* ===== INFLUENCER CARDS ===== */
+  .influencer-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+  }
+
+  @media (max-width: 600px) {
+    .influencer-cards { grid-template-columns: 1fr; }
+  }
+
+  .influencer-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+  }
+
+  .influencer-card:hover { transform: translateY(-3px); box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+
+  .influencer-card .inf-img {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--card-border);
+    margin-bottom: 10px;
+  }
+
+  .influencer-card .inf-initials {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0 auto 10px;
+  }
+
+  .influencer-card .inf-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .influencer-card .inf-role {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .influencer-card .inf-desc {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .influencer-card .inf-match {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0d47a1;
+  }
+
+  .restart-btn {
+    display: block;
+    margin: 30px auto;
+    padding: 14px 40px;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 50px;
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .restart-btn:hover {
+    border-color: var(--primary);
+    background: rgba(13,71,161,0.06);
+  }
+
+  /* ===== PRIORITY RANKING ===== */
+  .priority-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .priority-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .priority-item:active { cursor: grabbing; }
+  .priority-item:hover { border-color: #1976D2; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .priority-item.dragging { opacity: 0.5; transform: scale(0.98); }
+  .priority-item.drag-over { border-color: #0d47a1; border-style: dashed; }
+
+  .priority-rank {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .priority-info {
+    flex: 1;
+  }
+
+  .priority-info .pri-name {
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .priority-info .pri-desc {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .priority-arrows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .priority-arrows button {
+    background: rgba(13,71,161,0.08);
+    border: 1px solid rgba(13,71,161,0.15);
+    border-radius: 8px;
+    width: 32px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #0d47a1;
+    font-weight: 700;
+    transition: background 0.15s;
+  }
+
+  .priority-arrows button:hover { background: rgba(13,71,161,0.15); }
+  .priority-arrows button:disabled { opacity: 0.2; cursor: not-allowed; }
+
+  /* ===== LAWS PHASE ===== */
+  .laws-intro {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .laws-intro h2 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #0d47a1, #1976D2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .law-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 25px;
+    margin-bottom: 15px;
+    animation: slideIn 0.4s ease;
+  }
+
+  .law-card {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+
+  .law-card .law-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #0d47a1;
+  }
+
+  .law-card .law-desc {
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 15px;
+  }
+
+  .law-card .law-status {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+
+  .law-status.passed { background: rgba(0,184,148,0.15); color: #00b894; }
+  .law-status.rejected { background: rgba(253,121,168,0.15); color: #fd79a8; }
+  .law-status.pending { background: rgba(253,203,110,0.15); color: #fdcb6e; }
+
+  /* Coalition/Opposition agreement bars */
+  .agreement-section {
+    margin-bottom: 40px;
+  }
+
+  .agreement-bar-wrapper {
+    margin-bottom: 20px;
+  }
+
+  .agreement-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  .agreement-bar-outer {
+    height: 30px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 15px;
+    overflow: hidden;
+  }
+
+  .agreement-bar-inner {
+    height: 100%;
+    border-radius: 15px;
+    transition: width 1.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .coalition-bar { background: linear-gradient(90deg, #e17055, #d63031); }
+  .opposition-bar { background: linear-gradient(90deg, #0984e3, #6c5ce7); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .logo { font-size: 2.5rem; }
+    .likert-options { flex-direction: column-reverse; gap: 8px; }
+    .likert-btn { padding: 14px; font-size: 0.9rem; }
+    .question-card { padding: 25px; }
+    .axes-preview { grid-template-columns: 1fr; }
+    .top-matches { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== WELCOME ===== -->
+<div class="container" id="welcome">
+  <div class="logo">המצפן הפוליטי</div>
+  <div class="subtitle">
+    גלו את העמדות הפוליטיות שלכם ואת המפלגה הקרובה אליכם ביותר.
+    <br>54 שאלות, 4 צירים, ללא פופוליזם.
+  </div>
+
+  <div class="axes-preview">
+    <div class="axis-card">
+      <div class="icon" style="color:var(--econ-color)">&#9878;</div>
+      <div class="label">כלכלה</div>
+      <div class="range">שמאל &#8592; ימין</div>
+    </div>
+    <div class="axis-card">
+      <div class="icon" style="color:var(--auth-color)">&#9878;</div>
+      <div class="label">סמכות</div>
+      <div class="range">ליברלי &#8592; סמכותני</div>
+    </div>
+    <div class="axis-card">
+      <div class="icon" style="color:var(--relig-color)">&#9878;</div>
+      <div class="label">דת ומדינה</div>
+      <div class="range">חילוני &#8592; דתי</div>
+    </div>
+    <div class="axis-card">
+      <div class="icon" style="color:var(--def-color)">&#9878;</div>
+      <div class="label">ביטחון</div>
+      <div class="range">יוני &#8592; ניצי</div>
+    </div>
+  </div>
+
+  <button class="btn" onclick="startQuiz()">בואו נתחיל</button>
+</div>
+
+<!-- ===== QUIZ ===== -->
+<div class="container" id="quiz">
+  <div class="progress-container">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text">
+      <span id="progressLabel">שאלה 1 מתוך 36</span>
+      <span class="axis-tag" id="axisTag" style="background:var(--econ-color);color:white;">כלכלה</span>
+    </div>
+  </div>
+
+  <div id="questionArea"></div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav" id="prevBtn" onclick="prevQuestion()" disabled>הקודם</button>
+    <button class="btn-nav primary" id="nextBtn" onclick="nextQuestion()">הבא</button>
+  </div>
+</div>
+
+<!-- ===== PRIORITY RANKING ===== -->
+<div class="container" id="priorityPhase" style="display:none;">
+  <div class="laws-intro">
+    <h2>מה הכי חשוב לך?</h2>
+    <p style="color:var(--text-dim);margin-bottom:5px;">דרגו את הנושאים לפי החשיבות שלהם עבורכם.</p>
+    <p style="color:var(--text-dim);font-size:0.85rem;">הנושא שבמקום הראשון ישפיע הכי הרבה על ההתאמה שלכם למפלגה.</p>
+  </div>
+
+  <div id="priorityList" class="priority-list"></div>
+
+  <div class="nav-buttons" style="margin-top:20px;">
+    <div></div>
+    <button class="btn-nav primary" onclick="finishPriority()">המשך לחוקים</button>
+  </div>
+</div>
+
+<!-- ===== LAWS PHASE ===== -->
+<div class="container" id="lawsPhase" style="display:none;">
+  <div class="laws-intro">
+    <h2>שלב 2: חוקים אמיתיים</h2>
+    <p style="color:var(--text-dim);margin-bottom:5px;">עכשיו נבדוק את העמדות שלך מול חוקים אמיתיים שעלו בכנסת ה-25.</p>
+    <p style="color:var(--text-dim);font-size:0.85rem;">לכל חוק, ציינו כמה אתם מסכימים איתו. התוצאות ישפיעו על ההתאמה הסופית.</p>
+  </div>
+
+  <div class="progress-container">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="lawsProgressFill"></div>
+    </div>
+    <div class="progress-text">
+      <span id="lawsProgressLabel">חוק 1 מתוך 10</span>
+      <span class="axis-tag" id="lawsSourceTag" style="background:#e17055;color:white;">קואליציה</span>
+    </div>
+  </div>
+
+  <div id="lawArea"></div>
+
+  <div class="nav-buttons">
+    <button class="btn-nav" id="lawPrevBtn" onclick="prevLaw()" disabled>הקודם</button>
+    <button class="btn-nav primary" id="lawNextBtn" onclick="nextLaw()">הבא</button>
+  </div>
+</div>
+
+<!-- ===== RESULTS ===== -->
+<div class="container" id="results">
+  <div class="results-header">
+    <h1>התוצאות שלך</h1>
+    <p style="color:var(--text-dim)">הנה הפרופיל הפוליטי שלך</p>
+  </div>
+
+  <div id="matchCard" class="match-card"></div>
+  <div id="topMatches" class="top-matches"></div>
+
+  <div class="chart-section">
+    <h2>הכר את המפלגות שלך</h2>
+    <p class="chart-desc">לחצו על מפלגה לפרטים נוספים</p>
+    <div id="partyInfoCards" class="party-info-cards"></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>פרופיל הצירים שלך</h2>
+    <p class="chart-desc">תרשים עכביש - ארבעת הצירים</p>
+    <div class="chart-container">
+      <canvas id="radarChart" width="500" height="500"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h2>המצפן הפוליטי שלך</h2>
+    <p class="chart-desc">ציר X = שמאל-ימין כללי (כלכלה+ביטחון), ציר Y = שמרני-ליברלי (סמכות+דת)</p>
+    <div class="chart-container">
+      <canvas id="compass3" width="500" height="500"></canvas>
+    </div>
+    <div class="compass-legend" id="legend3"></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>פירוט לפי ציר</h2>
+    <div id="axisBreakdown" class="axis-breakdown"></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>אישים שחושבים כמוך</h2>
+    <p class="chart-desc">3 דמויות פוליטיות עם עמדות הכי קרובות לשלך</p>
+    <div id="influencerCards" class="influencer-cards"></div>
+  </div>
+
+  <div class="chart-section">
+    <h2>קואליציה מול אופוזיציה</h2>
+    <p class="chart-desc">כמה הסכמת עם חוקי הקואליציה לעומת הצעות האופוזיציה</p>
+    <div id="agreementSection" class="agreement-section"></div>
+  </div>
+
+  <div id="summaryCard" class="summary-card"></div>
+
+  <button class="restart-btn" onclick="restart()">התחל מחדש</button>
+</div>
+
+<script>
+// ===== PARTY DATA =====
+const parties = [
+  // ident = Zionist identity (hidden), camp = pro-Bibi(10) vs anti-Bibi(1) (hidden)
+  { name: "ליכוד", leader: "בנימין נתניהו", econ: 7, auth: 7, relig: 6, def: 7, ident: 9, camp: 10, color: "#1565C0", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Benjamin_Netanyahu%2C_February_2023.jpg/200px-Benjamin_Netanyahu%2C_February_2023.jpg",
+    info: {
+      ideology: "מפלגת ימין ליברלית-לאומית. שוק חופשי, ביטחון קודם, זהות יהודית חזקה אך לא דתית קיצונית.",
+      leaderBio: "בנימין נתניהו, ראש ממשלה הכי ותיק בתולדות ישראל. שימש כשר אוצר ושר חוץ. מנהיג הליכוד מ-1993.",
+      members: ["ירив לוין", "ישראל כץ", "ניר ברקת", "מירי רגב"],
+      pro: "ניסיון מדיני ענק, הסכמי אברהם, ניהול כלכלי יציב יחסית.",
+      con: "כתב אישום על שוחד ומרמה, פולריזציה חברתית, תלות בקואליציה קיצונית."
+    }},
+  { name: "בנט 2026", leader: "נפתלי בנט", econ: 8, auth: 5, relig: 3, def: 8, ident: 9, camp: 2, color: "#2E7D32", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Naftali_Bennett_official_portrait.jpg/200px-Naftali_Bennett_official_portrait.jpg",
+    info: {
+      ideology: "ימין חילוני-פרגמטי. שוק חופשי, הייטק, ביטחון נחרץ, הפרדת דת ממדינה, אנטי-ביבי.",
+      leaderBio: "נפתלי בנט, ראש ממשלה לשעבר (2021-2022). יזם הייטק, לשעבר ראש מועצת יש\"ע. חזר לפוליטיקה ב-2025.",
+      members: ["מתן כהנא (עבר לישר!)", "איילת שקד"],
+      pro: "ניסיון בראשות ממשלה, רקע עסקי, פרגמטי ולא אידיאולוגי קיצוני.",
+      con: "שבר הבטחה לא לשבת עם לפיד, מפלגה חדשה ללא מסד בוחרים מוכח."
+    }},
+  { name: "!ישר", leader: "גדי אייזנקוט", econ: 5, auth: 4, relig: 3, def: 5, ident: 8, camp: 1, color: "#00796B", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Gadi_Eisenkot_1.jpg/200px-Gadi_Eisenkot_1.jpg",
+    info: {
+      ideology: "מרכז-מדיני. ביטחון אחראי, שלטון חוק, גיוס שוויוני, כלכלה מאוזנת.",
+      leaderBio: "גדי אייזנקוט, רמטכ\"ל לשעבר (2015-2019). פיתח את \"דוקטרינת אייזנקוט\" של מידתיות. איבד את בנו גל ב-7.10.",
+      members: ["מתן כהנא", "טל רוסו", "שיר סיגל"],
+      pro: "ניסיון ביטחוני עצום, מנהיגות רגועה ומחושבת, אמינות אישית גבוהה.",
+      con: "מפלגה חדשה, חסר ניסיון פוליטי, עדיין לא הוכיח יכולת ניהול קואליציה."
+    }},
+  { name: "יש עתיד", leader: "יאיר לפיד", econ: 7, auth: 4, relig: 2, def: 5, ident: 8, camp: 2, color: "#EF6C00", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Yair_Lapid_%28D1237-011%29.jpg/200px-Yair_Lapid_%28D1237-011%29.jpg",
+    info: {
+      ideology: "מרכז-ליברלי. מעמד ביניים, הפרדת דת ממדינה, שלטון חוק, דיפלומטיה פעילה.",
+      leaderBio: "יאיר לפיד, ראש ממשלה לשעבר (2022), שר חוץ ושר אוצר לשעבר. עיתונאי ומגיש טלוויזיה בעברו.",
+      members: ["מאיר כהן", "קארין אלהרר", "בועז טופורובסקי"],
+      pro: "מנהיג אופוזיציה חזק, מחויב לדמוקרטיה ושלטון חוק, ניסיון ממשלתי.",
+      con: "נתפס כאליטיסט, לא הצליח לנצח את נתניהו בבחירות, חלש בביטחון."
+    }},
+  { name: 'ש"ס', leader: "אריה דרעי", econ: 3, auth: 7, relig: 9, def: 5, ident: 5, camp: 8, color: "#5D4037", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/%D7%90%D7%A8%D7%99%D7%94_%D7%93%D7%A8%D7%A2%D7%99_2.jpg/200px-%D7%90%D7%A8%D7%99%D7%94_%D7%93%D7%A8%D7%A2%D7%99_2.jpg",
+    info: {
+      ideology: "דתית-חברתית ספרדית. שמירה על מסורת, רווחה כלכלית לפריפריה, זהות ספרדית.",
+      leaderBio: "אריה דרעי, מנהיג ש\"ס מ-1984. שר פנים ובריאות לשעבר. ריצה עונש מאסר על שוחד. הודח מתפקיד שר ע\"י בג\"ץ.",
+      members: ["יצחק כהן", "משה ארבל", "מיכאל מלכיאלי"],
+      pro: "מייצג את הפריפריה הספרדית, רשת חברתית וחינוכית ענקית (אל המעיין).",
+      con: "הרשעה פלילית, שליטה אישית מוחלטת במפלגה, סחר פוליטי בקואליציות."
+    }},
+  { name: "יהדות התורה", leader: "יצחק גולדקנופף", econ: 2, auth: 8, relig: 10, def: 5, ident: 3, camp: 8, color: "#455A64", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Yitzchak_Goldknopf_1.jpg/200px-Yitzchak_Goldknopf_1.jpg",
+    info: {
+      ideology: "חרדית-אשכנזית. שמירה על עולם הישיבות, פטור מגיוס, תקציבים למוסדות תורניים.",
+      leaderBio: "יצחק גולדקנופף, שר השיכון. מנהיג חסידי מטעם אגודת ישראל. נכנס לפוליטיקה ב-2022.",
+      members: ["משה גפני", "מאיר פרוש", "יעקב אשר"],
+      pro: "ייצוג עקבי של הציבור החרדי, שימור מסורת ולימוד תורה.",
+      con: "התנגדות עקבית לגיוס, חוסר לימודי ליבה, תלות בתקציבי מדינה."
+    }},
+  { name: "עוצמה יהודית", leader: "איתמר בן גביר", econ: 6, auth: 9, relig: 7, def: 10, ident: 10, camp: 9, color: "#C62828", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Itamar_Ben_Gvir_3_%28cropped%29.jpg/200px-Itamar_Ben_Gvir_3_%28cropped%29.jpg",
+    info: {
+      ideology: "ימין קיצוני לאומני. ריבונות מלאה, כוח נגד טרור, אכיפה קשוחה, ערכים יהודיים.",
+      leaderBio: "איתמר בן גביר, שר הביטחון הלאומי. עורך דין לשעבר של פעילי ימין. הורשע בעבר בתמיכה בטרור ובגזענות.",
+      members: ["יצחק וסרלאוף", "עמיחי אליהו", "לימור סון הר-מלך"],
+      pro: "אותנטי, מחובר לבסיס שלו, מוביל שינוי באכיפה.",
+      con: "הרשעות פליליות בעבר, עליה להר הבית מעוררת מתחים, שיח מסית."
+    }},
+  { name: "ישראל ביתנו", leader: "אביגדור ליברמן", econ: 8, auth: 6, relig: 1, def: 9, ident: 9, camp: 1, color: "#283593", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Avigdor_Lieberman_2017.jpg/200px-Avigdor_Lieberman_2017.jpg",
+    info: {
+      ideology: "ימין חילוני קשוח. שוק חופשי, אנטי-חרדי, ביטחון נחרץ, גיוס שוויוני.",
+      leaderBio: "אביגדור ליברמן, שר אוצר, חוץ וביטחון לשעבר. עלה מברית המועצות. חבר כנסת מ-1999.",
+      members: ["עודד פורר", "אלי אביגדור", "שרון רואטבי"],
+      pro: "עקבי בעמדות, מנוסה בתפקידים בכירים, לוחם נגד פטור חרדים.",
+      con: "סגנון מפלג, האשמות שחיתות (זוכה), מפלגה קטנה עם תלות באיש אחד."
+    }},
+  { name: "הדמוקרטים", leader: "יאיר גולן", econ: 3, auth: 2, relig: 1, def: 3, ident: 6, camp: 1, color: "#AD1457", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Yair_Golan_%28SHL_9404%29.jpg/200px-Yair_Golan_%28SHL_9404%29.jpg",
+    info: {
+      ideology: "שמאל סוציאל-דמוקרטי. שוויון, זכויות אדם, שלום, הפרדת דת ממדינה, צדק חברתי.",
+      leaderBio: "יאיר גולן, אלוף (מיל') ומפקד פיקוד צפון לשעבר. הוביל את מחאת 2023 והפך למנהיג הדמוקרטים (מיזוג עבודה-מרצ).",
+      members: ["נעמה לזימי", "גלעד קריב", "יאיר פינק"],
+      pro: "רקע צבאי חזק, אותנטי, מגשר בין שמאל ביטחוני לחברתי.",
+      con: "מפלגה חדשה ומגוונת מדי, עמדות ביטחוניות רכות, קהל מצומצם."
+    }},
+  { name: 'רע"ם', leader: "מנסור עבאס", econ: 3, auth: 5, relig: 7, def: 2, ident: 2, camp: 4, color: "#00897B", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Mansour_Abbas%2C_April_3_2023_%28cropped%29.jpg/200px-Mansour_Abbas%2C_April_3_2023_%28cropped%29.jpg",
+    info: {
+      ideology: "ערבית-איסלאמית פרגמטית. שיפור חיי ערביי ישראל, שיתוף פעולה עם כל ממשלה.",
+      leaderBio: "מנסור עבאס, רופא שיניים ומנהיג התנועה האיסלאמית הדרומית. היה חלק מקואליציית בנט-לפיד - פריצת דרך היסטורית.",
+      members: ["וואליד טאהא", "אימאן חטיב-יאסין"],
+      pro: "פרגמטי, שבר טאבו של שותפות ערבית בקואליציה, מביא תקציבים למגזר.",
+      con: "מייצג תנועה איסלאמית, שיתף פעולה עם נתניהו, נתפס כבוגד ע\"י חלק מהמגזר."
+    }},
+  { name: 'חד"ש-תע"ל', leader: "איימן עודה", econ: 1, auth: 3, relig: 2, def: 1, ident: 1, camp: 1, color: "#B71C1C", threshold: false,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Ayman_Odeh_2021.png/200px-Ayman_Odeh_2021.png",
+    info: {
+      ideology: "ערבית-יהודית שמאלנית. קומוניזם, שוויון לאומי, מדינה דו-לאומית, צדק חברתי.",
+      leaderBio: "איימן עודה, מנהיג חד\"ש. עורך דין ופעיל חברתי מחיפה. מוביל שיתוף ערבי-יהודי.",
+      members: ["אחמד טיבי", "עאידה תומא-סלימאן", "עופר כסיף"],
+      pro: "מפלגה ערבית-יהודית ייחודית, עקבית אידיאולוגית, קול חזק למיעוט.",
+      con: "עמדות קיצוניות על הסכסוך, קהל מצומצם, לא רלוונטית לקואליציה."
+    }},
+  { name: "הציונות הדתית", leader: "בצלאל סמוטריץ'", econ: 7, auth: 8, relig: 9, def: 10, ident: 10, camp: 9, color: "#E65100", threshold: true,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Bezalel_Smotrich.jpg/200px-Bezalel_Smotrich.jpg",
+    info: {
+      ideology: "ימין דתי-לאומי. ריבונות על כל ארץ ישראל, ערכי תורה במדינה, התיישבות.",
+      leaderBio: "בצלאל סמוטריץ', שר האוצר. עורך דין ופעיל התיישבות. הוביל מחאה נגד הנסיגה מעזה.",
+      members: ["אופיר סופר", "שמחה רוטמן", "אוהד טל"],
+      pro: "אידיאולוגי ועקבי, קידם תשתיות ביהודה ושומרון.",
+      con: "עמדות קיצוניות, קרוב לאחוז החסימה בסקרים, אמירות מסיתות."
+    }},
+  { name: "כחול לבן", leader: "בני גנץ", econ: 6, auth: 5, relig: 3, def: 7, ident: 8, camp: 2, color: "#1976D2", threshold: true,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Israeli_Minister_Benny_Gantz_at_the_Department_of_State_in_Washington%2C_D.C._on_March_5%2C_2024_%28cropped%29.jpg/200px-Israeli_Minister_Benny_Gantz_at_the_Department_of_State_in_Washington%2C_D.C._on_March_5%2C_2024_%28cropped%29.jpg",
+    info: {
+      ideology: "מרכז-ביטחוני. ביטחון אחראי, ממלכתיות, שלטון חוק, אחדות לאומית.",
+      leaderBio: "בני גנץ, רמטכ\"ל לשעבר (2011-2015), שר ביטחון ומשלח לקבינט המלחמה. עזב את קבינט החירום ב-2024.",
+      members: ["חילי טרופר", "פנינה תמנו-שטה"],
+      pro: "מנהיג ביטחוני מנוסה, רגוע ומאופק, מבקש אחדות.",
+      con: "קרוב לאחוז החסימה, נתפס כחלש פוליטית, שבר הבטחה לגבי ישיבה עם ביבי."
+    }},
+];
+
+// ===== INFLUENCERS & POLITICAL FIGURES =====
+const influencers = [
+  { name: "יונתן שלו", role: "פעיל מילואים / משפיען", desc: "מייסד תנועת 'כתף אל כתף' למאבק בשוויון הנטל. לוחם מגלן, נכד שגרירת ישראל באו\"ם.",
+    econ: 5, auth: 3, relig: 1, def: 6,
+    img: "" },
+  { name: "מתן יפה", role: "פעיל ציוני / משפיען", desc: "רב\"ט מילואים, מייסד תנועת 'אל הדגל' הציונית שמבקשת לחצות את המחנאות ימין-שמאל.",
+    econ: 5, auth: 6, relig: 4, def: 8,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/%D7%9E%D7%AA%D7%9F_%D7%99%D7%A4%D7%94.jpeg/200px-%D7%9E%D7%AA%D7%9F_%D7%99%D7%A4%D7%94.jpeg" },
+  { name: "עמית סגל", role: "פרשן פוליטי / עיתונאי", desc: "פרשן פוליטי ראשי בערוץ 12 וישראל היום. מזוהה עם הימין אך נחשב מקצועי.",
+    econ: 7, auth: 6, relig: 5, def: 7,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Amit_Segal_D817-028_%28cropped%29.jpg/200px-Amit_Segal_D817-028_%28cropped%29.jpg" },
+  { name: "ינון מגל", role: "מגיש טלוויזיה / ערוץ 14", desc: "מגיש ערוץ 14 וחבר כנסת לשעבר. קול ימני פופוליסטי עם רטוריקה חריפה.",
+    econ: 7, auth: 8, relig: 7, def: 9,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Yinon_Magal.jpg/200px-Yinon_Magal.jpg" },
+  { name: "אמנון אברמוביץ'", role: "פרשן פוליטי / עיתונאי", desc: "פרשן ותיק בערוץ 12. עמוד תווך של העיתונות המרכז-שמאלית בישראל.",
+    econ: 3, auth: 3, relig: 2, def: 4,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Amnon_Abramovich_%28cropped%29.jpg/200px-Amnon_Abramovich_%28cropped%29.jpg" },
+  { name: "משה גפני", role: 'ח"כ / יהדות התורה', desc: "חבר הכנסת הוותיק ביותר (מ-1988). יו\"ר ועדת הכספים. מגן על פטור חרדים מגיוס.",
+    econ: 4, auth: 7, relig: 10, def: 4,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Moshe_Gafni.jpg/200px-Moshe_Gafni.jpg" },
+  { name: "מירי רגב", role: "שרת התחבורה / ליכוד", desc: "דובר צה\"ל לשעבר. פוליטיקאית פופוליסטית עם סגנון חריף. שרת תרבות ותחבורה.",
+    econ: 7, auth: 8, relig: 6, def: 8,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Miri_Regev_2021.jpg/200px-Miri_Regev_2021.jpg" },
+  { name: "אחמד טיבי", role: 'ח"כ / תע"ל', desc: "חבר הכנסת הערבי הוותיק ביותר. רופא, ידוע בנאומים חריפים ובמאבק למען האזרחים הערבים.",
+    econ: 2, auth: 2, relig: 3, def: 1,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Ahmad_Tibi_2.jpg/200px-Ahmad_Tibi_2.jpg" },
+  { name: "שמחה רוטמן", role: 'ח"כ / הציונות הדתית', desc: "יו\"ר ועדת החוקה. אדריכל המהפכה המשפטית של 2023. דמות מרכזית בויכוח הרפורמה.",
+    econ: 8, auth: 9, relig: 8, def: 8,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Simcha_Rothman.jpg/200px-Simcha_Rothman.jpg" },
+  { name: "גלעד קריב", role: 'ח"כ / הדמוקרטים', desc: "רב רפורמי וחבר כנסת. מוביל מאבקים לחופש דת, נישואים אזרחיים וזכויות להט\"ב.",
+    econ: 3, auth: 2, relig: 1, def: 3,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Gilad_Kariv.jpg/200px-Gilad_Kariv.jpg" },
+  { name: "ניר ברקת", role: "שר הכלכלה / ליכוד", desc: "ראש עיריית ירושלים לשעבר. יזם הייטק. שר הכלכלה. מתחרה פוטנציאלי על הנהגת הליכוד.",
+    econ: 8, auth: 6, relig: 4, def: 7,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Nir_Barkat_2023.jpg/200px-Nir_Barkat_2023.jpg" },
+  { name: "ישראל כץ", role: "שר החוץ / ליכוד", desc: "שר חוץ, ביטחון ותחבורה לשעבר. פוליטיקאי ותיק בליכוד עם ניסיון ממשלתי נרחב.",
+    econ: 7, auth: 7, relig: 5, def: 8,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Israel_Katz_2023.jpg/200px-Israel_Katz_2023.jpg" },
+  { name: "מתן כהנא", role: "!ישר / ח\"כ לשעבר", desc: "רב וחבר כנסת לשעבר. שר לשירותי דת בממשלת בנט. דתי-ליברלי שעבר מימינה לישר!.",
+    econ: 5, auth: 4, relig: 4, def: 6,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Matan_Kahana.jpg/200px-Matan_Kahana.jpg" },
+  { name: "עמיחי אליהו", role: "שר מורשת / עוצמה יהודית", desc: "שר המורשת. עורר סערה כשאמר שהטלת פצצה גרעינית על עזה היא \"אפשרות\". ימין קיצוני.",
+    econ: 6, auth: 9, relig: 8, def: 10,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Amichai_Eliyahu.jpg/200px-Amichai_Eliyahu.jpg" },
+  { name: "פנינה תמנו-שטה", role: "כחול לבן / ח\"כ", desc: "חברת כנסת ממוצא אתיופי. שרת עלייה וקליטה לשעבר. פעילה למען שוויון עדתי.",
+    econ: 5, auth: 4, relig: 3, def: 6,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Pnina_Tamano-Shata_2021.jpg/200px-Pnina_Tamano-Shata_2021.jpg" },
+  { name: "ירון זליכה", role: "כלכלן / פעיל ציבורי", desc: "חשב כללי לשעבר ומוביל המחאה החברתית של 2011. קול ביקורתי על מדיניות כלכלית ימנית.",
+    econ: 2, auth: 3, relig: 2, def: 4,
+    img: "https://upload.wikimedia.org/wikipedia/commons/9/92/Yaron_zalicha.jpg" },
+  { name: "ירון דקל", role: "פעיל מחאה / אחי חטוף", desc: "אחיו של חטוף שנרצח ב-7.10. הפך לפעיל מרכזי במחאת המשפחות מול הממשלה.",
+    econ: 4, auth: 3, relig: 2, def: 5,
+    img: "" },
+  { name: "שיר סיגל", role: "!ישר / פעילה", desc: "בתו של קית' סיגל, חטוף מעזה. הצטרפה למפלגת ישר! של אייזנקוט. קול משפחות החטופים.",
+    econ: 4, auth: 3, relig: 2, def: 6,
+    img: "" },
+  { name: "אופיר סופר", role: "שר / הציונות הדתית", desc: "שר ההגנה על הסביבה. מתנחל מקדש התורה. ימין דתי-לאומי קלאסי.",
+    econ: 7, auth: 7, relig: 9, def: 10,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Ofir_Sofer.jpg/200px-Ofir_Sofer.jpg" },
+  { name: "נעמה לזימי", role: "הדמוקרטים / פעילה", desc: "מנהיגת מחאת הדגלים השחורים נגד נתניהו. הצטרפה למפלגת הדמוקרטים של יאיר גולן.",
+    econ: 3, auth: 2, relig: 1, def: 3,
+    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Naama_lazimi.jpg/200px-Naama_lazimi.jpg" },
+];
+
+// ===== QUESTIONS =====
+// Each question: { text, axis, direction }
+// direction: 1 = agree means higher score, -1 = agree means lower score
+const questions = [
+  // === ECONOMY (10 questions) ===
+  { text: "המדינה צריכה להעלות את שכר המינימום באופן משמעותי, גם אם זה פוגע בעסקים קטנים.", axis: "econ", dir: -1 },
+  { text: "הפרטה של שירותים ציבוריים כמו בריאות וחינוך תשפר את איכותם.", axis: "econ", dir: 1 },
+  { text: "המדינה צריכה לספק דיור ציבורי נרחב ולהגביל את מחירי הדירות.", axis: "econ", dir: -1 },
+  { text: "מיסים גבוהים על עשירים פוגעים בצמיחה הכלכלית ומרחיקים משקיעים.", axis: "econ", dir: 1 },
+  { text: "יש להרחיב משמעותית את קצבאות הרווחה, גם במחיר של גירעון תקציבי.", axis: "econ", dir: -1 },
+  { text: "השוק החופשי הוא הדרך הטובה ביותר לפתור בעיות כלכליות.", axis: "econ", dir: 1 },
+  { text: "צריך להלאים חברות תשתית בסיסיות כמו חשמל, מים ותחבורה ציבורית.", axis: "econ", dir: -1 },
+  { text: "תחרות חופשית בין עסקים, ללא התערבות ממשלתית, מובילה לתוצאות הטובות ביותר עבור הצרכן.", axis: "econ", dir: 1 },
+  { text: "על המדינה להבטיח ביטוח בריאות אוניברסלי וחינם לכל אזרח.", axis: "econ", dir: -1 },
+  { text: "אדם שעובד קשה צריך להצליח בזכות עצמו, בלי לסמוך על המדינה.", axis: "econ", dir: 1 },
+
+  // === AUTHORITY (10 questions) ===
+  { text: "צריך שיהיה גוף עצמאי שיכול לבטל החלטות של נבחרי ציבור אם הן פוגעות בזכויות בסיסיות.", axis: "auth", dir: -1 },
+  { text: "בזמן מלחמה, מותר לממשלה להגביל חופש עיתונות לטובת הביטחון.", axis: "auth", dir: 1 },
+  { text: "למשטרה צריכה להיות יותר סמכות לעצור חשודים גם ללא צו שופט.", axis: "auth", dir: 1 },
+  { text: "חופש הביטוי צריך להיות מוגן גם כשמדובר בדעות שפוגעות או מעליבות.", axis: "auth", dir: -1 },
+  { text: "מנהיג חזק שיכול לקבל החלטות מהר, גם בלי לחכות לאישור של כל גורם, הוא מה שהמדינה צריכה.", axis: "auth", dir: 1 },
+  { text: "גם במצב ביטחוני קשה, אסור לפגוע בזכויות בסיסיות של אנשים.", axis: "auth", dir: -1 },
+  { text: "יש לאפשר למדינה לעקוב אחרי תקשורת של אזרחים למניעת פשע וטרור.", axis: "auth", dir: 1 },
+  { text: "חשוב שאף גורם במדינה לא יהיה חזק מדי - לא הממשלה, לא הצבא, ולא בתי המשפט.", axis: "auth", dir: -1 },
+  { text: "סדר ציבורי חשוב יותר מחירויות אישיות.", axis: "auth", dir: 1 },
+  { text: "אם נבחר ציבור מקבל החלטה שרוב העם תומך בה, אף גורם לא צריך לעצור אותו.", axis: "auth", dir: 1 },
+
+  // === RELIGION & STATE (11 questions) ===
+  { text: "תחבורה ציבורית צריכה לפעול בשבת בכל הארץ.", axis: "relig", dir: -1 },
+  { text: "נישואים אזרחיים צריכים להיות אפשרות חוקית בישראל.", axis: "relig", dir: -1 },
+  { text: "מערכת החינוך הממלכתית צריכה לכלול יותר תכני יהדות ומסורת.", axis: "relig", dir: 1 },
+  { text: "הרבנות הראשית צריכה לשמור על סמכותה בנושאי גיור ונישואים.", axis: "relig", dir: 1 },
+  { text: "חוקי כשרות צריכים לחול על כל המוסדות הציבוריים.", axis: "relig", dir: 1 },
+  { text: "יש להפריד לחלוטין בין דת למדינה בישראל.", axis: "relig", dir: -1 },
+  { text: "חנויות ומסעדות צריכות להיות סגורות בשבת לפי חוק.", axis: "relig", dir: 1 },
+  { text: "לימודי ליבה (מתמטיקה, אנגלית, מדעים) צריכים להיות חובה בכל מוסדות החינוך, כולל חרדיים.", axis: "relig", dir: -1 },
+  { text: "לזהות היהודית של המדינה צריך להיות משקל רב יותר מאשר לערכים ליברליים.", axis: "relig", dir: 1 },
+  { text: "בן אדם צריך להיות חופשי לבחור את אורח חייו בלי שהמדינה תכתיב לו ערכים דתיים.", axis: "relig", dir: -1 },
+  { text: "גיוס בני ישיבות לצבא צריך להיות חובה כמו לכל אזרח אחר.", axis: "relig", dir: -1 },
+  { text: "זוגות חד-מיניים צריכים לקבל את אותן הזכויות המשפטיות כמו כל זוג אחר, כולל אימוץ.", axis: "relig", dir: -1 },
+  { text: "המדינה צריכה להכיר רק במשפחה מסורתית - גבר ואישה - כבסיס לחברה.", axis: "relig", dir: 1 },
+
+  // === CAMP (6 hidden questions - government performance + pro/anti) ===
+  { text: "הממשלה הנוכחית מובילה את המדינה בכיוון הנכון.", axis: "camp", dir: 1 },
+  { text: "צריך להחליף את ההנהגה הנוכחית גם אם אין אלטרנטיבה מושלמת.", axis: "camp", dir: -1 },
+  { text: "הממשלה ניהלה את המלחמה ברצועת עזה בצורה טובה.", axis: "camp", dir: 1 },
+  { text: "הממשלה ניהלה את המלחמה בלבנון בצורה טובה.", axis: "camp", dir: 1 },
+  { text: "הממשלה ניהלה את המערכה מול איראן בצורה טובה.", axis: "camp", dir: 1 },
+  { text: "הממשלה מטפלת בנושא גיוס החרדים בצורה מספקת.", axis: "camp", dir: 1 },
+
+  // === IDENTITY (3 hidden-axis questions - not shown as axis but affects matching) ===
+  { text: "ישראל צריכה להישאר מדינה יהודית עם רוב יהודי ברור.", axis: "ident", dir: 1 },
+  { text: "הנרטיב הציוני הוא חלק מרכזי מהזהות שלי.", axis: "ident", dir: 1 },
+  { text: "כל האזרחים בישראל צריכים זכויות שוות לחלוטין, גם אם זה משנה את אופי המדינה.", axis: "ident", dir: -1 },
+
+  // === DEFENSE (12 questions: mix of direct and value-based) ===
+  // Direct questions
+  { text: "משא ומתן עם חמאס הוא צעד לגיטימי אם הוא מחזיר חטופים.", axis: "def", dir: -1 },
+  { text: "על ישראל להרחיב את ההתנחלויות ביהודה ושומרון.", axis: "def", dir: 1 },
+  { text: "שיתוף פעולה עם הרשות הפלסטינית חשוב לביטחון ישראל.", axis: "def", dir: -1 },
+  { text: "יש להחיל ריבונות ישראלית על כל שטחי יהודה ושומרון.", axis: "def", dir: 1 },
+  // Value-based questions
+  { text: "לפעמים צריך לדבר גם עם גורמים עוינים אם זה מציל חיים של אזרחים.", axis: "def", dir: -1 },
+  { text: "כוח צבאי הוא הדרך היחידה האפקטיבית להבטיח את ביטחון ישראל.", axis: "def", dir: 1 },
+  { text: "שלום עם שכנים שווה ויתורים, גם אם זה אומר לוותר על שטחים שיש לנו עליהם זכות היסטורית.", axis: "def", dir: -1 },
+  { text: "ישראל צריכה לפעול צבאית באופן נחרץ ומיידי נגד כל איום, ללא הססנות.", axis: "def", dir: 1 },
+  { text: "דיפלומטיה ולחץ בינלאומי הם כלים חשובים לא פחות מכוח צבאי.", axis: "def", dir: -1 },
+  { text: "ביטחון אמיתי נבנה גם דרך חוסן כלכלי וחברתי, לא רק דרך צבא.", axis: "def", dir: -1 },
+  { text: "עדיף לחיות בסכסוך מתמשך מאשר לוותר על ערכים ושטחים שהם חלק מהזהות שלנו.", axis: "def", dir: 1 },
+  { text: "מדינה חזקה יודעת גם מתי לעשות פשרות קשות כדי להגיע ליציבות ארוכת טווח.", axis: "def", dir: -1 },
+];
+
+// ===== STATE =====
+let currentQ = 0;
+let answers = new Array(questions.length).fill(null); // null = unanswered, 1-5
+
+// ===== QUIZ LOGIC =====
+function startQuiz() {
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = questions[currentQ];
+  const axisLabels = { econ: "כלכלה", auth: "סמכות", relig: "דת ומדינה", def: "ביטחון", ident: "זהות", camp: "מחנאות" };
+  const axisColors = { econ: "var(--econ-color)", auth: "var(--auth-color)", relig: "var(--relig-color)", def: "var(--def-color)", ident: "var(--accent)", camp: "var(--warning)" };
+
+  // Update progress
+  document.getElementById('progressFill').style.width = ((currentQ / questions.length) * 100) + '%';
+  document.getElementById('progressLabel').textContent = `שאלה ${currentQ + 1} מתוך ${questions.length}`;
+  const tag = document.getElementById('axisTag');
+  tag.textContent = axisLabels[q.axis];
+  tag.style.background = axisColors[q.axis];
+
+  const likertLabels = ["מסכים/ה מאוד", "מסכים/ה", "ניטרלי", "לא מסכים/ה", "לא מסכים/ה בכלל"];
+
+  let html = `<div class="question-card">
+    <div class="question-number">שאלה ${currentQ + 1} / ${questions.length}</div>
+    <div class="question-text">${q.text}</div>
+    <div class="likert-options">`;
+
+  for (let i = 1; i <= 5; i++) {
+    const selected = answers[currentQ] === i ? 'selected' : '';
+    html += `<button class="likert-btn ${selected}" onclick="selectAnswer(${i})">${likertLabels[i-1]}</button>`;
+  }
+
+  html += `</div></div>`;
+  document.getElementById('questionArea').innerHTML = html;
+
+  // Nav buttons
+  document.getElementById('prevBtn').disabled = currentQ === 0;
+  document.getElementById('nextBtn').textContent = currentQ === questions.length - 1 ? "סיום" : "הבא";
+  document.getElementById('nextBtn').disabled = answers[currentQ] === null;
+}
+
+function selectAnswer(val) {
+  answers[currentQ] = val;
+  document.querySelectorAll('.likert-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === val - 1);
+  });
+  document.getElementById('nextBtn').disabled = false;
+  // Auto-advance after short delay
+  setTimeout(() => {
+    if (currentQ < questions.length - 1) {
+      nextQuestion();
+    } else {
+      startPriorityPhase();
+    }
+  }, 250);
+}
+
+function nextQuestion() {
+  if (currentQ < questions.length - 1) {
+    currentQ++;
+    showQuestion();
+  } else {
+    startPriorityPhase();
+  }
+}
+
+function prevQuestion() {
+  if (currentQ > 0) {
+    currentQ--;
+    showQuestion();
+  }
+}
+
+// ===== SCORING =====
+function calculateScores() {
+  const axes = { econ: [], auth: [], relig: [], def: [], ident: [], camp: [] };
+
+  questions.forEach((q, i) => {
+    if (answers[i] === null) return;
+    // Convert 1-5 likert to score:
+    // 1 = strongly agree = 5pts in direction
+    // 5 = strongly disagree = 1pt in direction
+    let raw = 6 - answers[i]; // flip so 1=strongly disagree=1, 5=strongly agree=5
+    // If direction is 1: agree = high score. If -1: agree = low score.
+    let score;
+    if (q.dir === 1) {
+      score = raw; // agree (5) = high score
+    } else {
+      score = 6 - raw; // agree (5) = low score => flip
+    }
+    // Normalize to 1-10
+    axes[q.axis].push(score);
+  });
+
+  const result = {};
+  for (const axis of ['econ', 'auth', 'relig', 'def', 'ident', 'camp']) {
+    const arr = axes[axis];
+    if (arr.length === 0) { result[axis] = 5; continue; }
+    const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+    // avg is 1-5, map to 1-10
+    result[axis] = 1 + (avg - 1) * (9 / 4);
+  }
+  return result;
+}
+
+function getPartyDistance(userScores, party) {
+  // Use user priority weights for visible axes, fixed for hidden axes
+  const priorityWeights = getPriorityWeights();
+  const weights = {
+    econ: priorityWeights.econ || 1,
+    auth: priorityWeights.auth || 1,
+    relig: priorityWeights.relig || 1.3,
+    def: priorityWeights.def || 1.3,
+    ident: 1.5,
+    camp: 1.4
+  };
+  const axes = ['econ', 'auth', 'relig', 'def', 'ident', 'camp'];
+  let weightedSum = 0;
+  let maxDiff = 0;
+  for (const axis of axes) {
+    if (userScores[axis] === undefined) continue;
+    const diff = Math.abs(userScores[axis] - party[axis]);
+    weightedSum += weights[axis] * diff * diff;
+    maxDiff = Math.max(maxDiff, diff);
+  }
+  let dist = Math.sqrt(weightedSum);
+  // Penalty: if any single axis has a large gap (>4), add extra penalty
+  if (maxDiff > 4) {
+    dist += (maxDiff - 4) * 1.5;
+  }
+  return dist;
+}
+
+function getMatchPercentage(distance) {
+  // Max possible distance with 6 weighted axes + penalty ≈ 28
+  const maxDist = 28;
+  return Math.max(0, Math.round((1 - distance / maxDist) * 100));
+}
+
+// ===== RESULTS =====
+function showResults() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('lawsPhase').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+  window.scrollTo(0, 0);
+
+  const scores = calculateScores();
+
+  // Apply light boost from laws answers
+  const boost = getLawsAxisBoost();
+  for (const axis of ['econ', 'auth', 'relig', 'def']) {
+    scores[axis] = Math.max(1, Math.min(10, scores[axis] + boost[axis]));
+  }
+
+  // Calculate camp score from laws (pro-coalition=10, pro-opposition=1)
+  const agreement = calculateLawsAgreement();
+  // coalition agreement pushes toward 10, opposition toward 1
+  const campRaw = (agreement.coalition - agreement.opposition); // range: -100 to +100
+  scores.camp = Math.max(1, Math.min(10, 5.5 + campRaw / 22)); // map to 1-10
+
+  // Sort parties by distance
+  const ranked = parties.map(p => ({
+    ...p,
+    distance: getPartyDistance(scores, p),
+    match: getMatchPercentage(getPartyDistance(scores, p))
+  })).sort((a, b) => a.distance - b.distance);
+
+  // Match card
+  const best = ranked[0];
+  document.getElementById('matchCard').innerHTML = `
+    <div class="match-label">המפלגה הקרובה אליך ביותר</div>
+    <img class="leader-img" src="${best.img}" alt="${best.leader}" onerror="this.style.display='none'">
+    <div class="party-name">${best.name}</div>
+    <div style="color:var(--text-dim);margin-bottom:10px;">${best.leader}</div>
+    <div class="match-pct">${best.match}%</div>
+    <div class="match-label">התאמה</div>
+    ${best.threshold ? '<div style="color:var(--warning);font-size:0.8rem;margin-top:8px;">* מפלגה זו קרובה לאחוז החסימה בסקרים</div>' : ''}
+  `;
+
+  // Top matches
+  let topHtml = '';
+  for (let i = 0; i < Math.min(5, ranked.length); i++) {
+    const p = ranked[i];
+    topHtml += `<div class="top-match-item">
+      <div class="rank">#${i + 1}</div>
+      <img class="leader-thumb" src="${p.img}" alt="${p.leader}" onerror="this.style.display='none'">
+      <div class="name">${p.name}</div>
+      <div class="pct">${p.match}%</div>
+      ${p.threshold ? '<div class="threshold-warning">קרוב לאחוז החסימה</div>' : ''}
+    </div>`;
+  }
+  document.getElementById('topMatches').innerHTML = topHtml;
+
+  // Draw charts
+  drawRadar(scores, best);
+  drawCombinedCompass(scores);
+  drawAxisBreakdown(scores, ranked);
+  drawPartyInfoCards(ranked);
+  drawInfluencerCards(scores);
+  drawAgreement();
+  drawSummary(scores, ranked);
+}
+
+// ===== RADAR CHART =====
+function drawRadar(scores, bestParty) {
+  const canvas = document.getElementById('radarChart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(W, H) / 2 - 60;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const axes = ['econ', 'auth', 'relig', 'def'];
+  const labels = ['כלכלה', 'סמכות', 'דת ומדינה', 'ביטחון'];
+  const edgeLabels = ['ימין כלכלי', 'סמכותני', 'דתי', 'ניצי'];
+  const n = axes.length;
+
+  // Draw grid
+  for (let level = 1; level <= 5; level++) {
+    const r = (level / 5) * R;
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const angle = (Math.PI * 2 * (i % n)) / n - Math.PI / 2;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.stroke();
+  }
+
+  // Center label
+  ctx.font = '500 10px Heebo';
+  ctx.fillStyle = '#8a8aaa';
+  ctx.textAlign = 'center';
+  ctx.fillText('מרכז = שמאל / ליברלי / חילוני / יוני', cx, cy + 5);
+
+  // Draw axis lines
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * R, cy + Math.sin(angle) * R);
+    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+    ctx.stroke();
+  }
+
+  // Draw labels (axis name + edge direction)
+  ctx.textAlign = 'center';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    const x = cx + Math.cos(angle) * (R + 35);
+    const y = cy + Math.sin(angle) * (R + 35);
+    ctx.font = '700 13px Heebo';
+    ctx.fillStyle = '#1a2a3a';
+    ctx.fillText(labels[i], x, y);
+    ctx.font = '400 10px Heebo';
+    ctx.fillStyle = '#8a8aaa';
+    ctx.fillText('← ' + edgeLabels[i], x, y + 15);
+  }
+
+  // Draw party polygon
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const idx = i % n;
+    const angle = (Math.PI * 2 * idx) / n - Math.PI / 2;
+    const val = bestParty[axes[idx]] / 10;
+    const x = cx + Math.cos(angle) * val * R;
+    const y = cy + Math.sin(angle) * val * R;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = hexToRgba(bestParty.color, 0.15);
+  ctx.fill();
+  ctx.strokeStyle = hexToRgba(bestParty.color, 0.6);
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw user polygon
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const idx = i % n;
+    const angle = (Math.PI * 2 * idx) / n - Math.PI / 2;
+    const val = scores[axes[idx]] / 10;
+    const x = cx + Math.cos(angle) * val * R;
+    const y = cy + Math.sin(angle) * val * R;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(13,71,161,0.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#0d47a1';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Draw user dots
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
+    const val = scores[axes[i]] / 10;
+    const x = cx + Math.cos(angle) * val * R;
+    const y = cy + Math.sin(angle) * val * R;
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#0d47a1';
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Legend
+  ctx.font = '500 12px Heebo';
+  ctx.fillStyle = '#0d47a1';
+  ctx.fillRect(15, 15, 12, 12);
+  ctx.fillStyle = '#3a4a5a';
+  ctx.textAlign = 'start';
+  ctx.fillText('אתה', 32, 26);
+  ctx.fillStyle = bestParty.color;
+  ctx.fillRect(15, 35, 12, 12);
+  ctx.fillStyle = '#3a4a5a';
+  ctx.fillText(bestParty.name + ' (' + bestParty.leader + ')', 32, 46);
+}
+
+// ===== COMPASS (2D SCATTER) =====
+function drawCompass(canvasId, legendId, scores, xAxis, yAxis, xLabelL, xLabelR, yLabelB, yLabelT) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = 50;
+  const plotW = W - pad * 2, plotH = H - pad * 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background quadrants
+  const colors = ['rgba(0,184,148,0.05)', 'rgba(108,92,231,0.05)', 'rgba(225,112,85,0.05)', 'rgba(9,132,227,0.05)'];
+  ctx.fillStyle = colors[0]; ctx.fillRect(pad, pad, plotW/2, plotH/2);
+  ctx.fillStyle = colors[1]; ctx.fillRect(pad+plotW/2, pad, plotW/2, plotH/2);
+  ctx.fillStyle = colors[2]; ctx.fillRect(pad, pad+plotH/2, plotW/2, plotH/2);
+  ctx.fillStyle = colors[3]; ctx.fillRect(pad+plotW/2, pad+plotH/2, plotW/2, plotH/2);
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 9; i++) {
+    const x = pad + (i / 10) * plotW;
+    const y = pad + (i / 10) * plotH;
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, pad + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + plotW, y); ctx.stroke();
+  }
+
+  // Center lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pad + plotW/2, pad); ctx.lineTo(pad + plotW/2, pad + plotH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, pad + plotH/2); ctx.lineTo(pad + plotW, pad + plotH/2); ctx.stroke();
+
+  // Labels
+  ctx.font = '600 12px Heebo';
+  ctx.fillStyle = '#5a6a7a';
+  ctx.textAlign = 'center';
+  ctx.fillText(xLabelL, pad + plotW * 0.15, H - 10);
+  ctx.fillText(xLabelR, pad + plotW * 0.85, H - 10);
+  ctx.save();
+  ctx.translate(12, pad + plotH * 0.85);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(yLabelB, 0, 0);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(12, pad + plotH * 0.15);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(yLabelT, 0, 0);
+  ctx.restore();
+
+  // Plot parties
+  let legendHtml = '';
+  parties.forEach(p => {
+    const x = pad + ((p[xAxis] - 0.5) / 10) * plotW;
+    const y = pad + plotH - ((p[yAxis] - 0.5) / 10) * plotH;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.threshold ? 0.5 : 0.8;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Party label
+    ctx.font = '500 10px Heebo';
+    ctx.fillStyle = '#3a4a5a';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, x, y - 14);
+
+    legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${p.color};${p.threshold ? 'opacity:0.5':''}"></div>${p.name}</div>`;
+  });
+
+  // Plot user
+  const ux = pad + ((scores[xAxis] - 0.5) / 10) * plotW;
+  const uy = pad + plotH - ((scores[yAxis] - 0.5) / 10) * plotH;
+  ctx.beginPath();
+  ctx.arc(ux, uy, 12, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(13,71,161,0.85)';
+  ctx.fill();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.font = '700 10px Heebo';
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'center';
+  ctx.fillText('אתה', ux, uy + 4);
+
+  document.getElementById(legendId).innerHTML = legendHtml;
+}
+
+function drawCombinedCompass(scores) {
+  const combinedScores = {
+    x: (scores.econ + scores.def) / 2,
+    y: (scores.auth + scores.relig) / 2,
+  };
+
+  const canvas = document.getElementById('compass3');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const pad = 50;
+  const plotW = W - pad * 2, plotH = H - pad * 2;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Background quadrants
+  const colors = ['rgba(0,184,148,0.05)', 'rgba(108,92,231,0.05)', 'rgba(225,112,85,0.05)', 'rgba(9,132,227,0.05)'];
+  ctx.fillStyle = colors[0]; ctx.fillRect(pad, pad, plotW/2, plotH/2);
+  ctx.fillStyle = colors[1]; ctx.fillRect(pad+plotW/2, pad, plotW/2, plotH/2);
+  ctx.fillStyle = colors[2]; ctx.fillRect(pad, pad+plotH/2, plotW/2, plotH/2);
+  ctx.fillStyle = colors[3]; ctx.fillRect(pad+plotW/2, pad+plotH/2, plotW/2, plotH/2);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 9; i++) {
+    const x = pad + (i / 10) * plotW;
+    const y = pad + (i / 10) * plotH;
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, pad + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad + plotW, y); ctx.stroke();
+  }
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(pad + plotW/2, pad); ctx.lineTo(pad + plotW/2, pad + plotH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, pad + plotH/2); ctx.lineTo(pad + plotW, pad + plotH/2); ctx.stroke();
+
+  // Quadrant labels
+  ctx.font = '600 13px Heebo';
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  ctx.textAlign = 'center';
+  ctx.fillText('שמאל ליברלי', pad + plotW * 0.25, pad + plotH * 0.92);
+  ctx.fillText('ימין ליברלי', pad + plotW * 0.75, pad + plotH * 0.92);
+  ctx.fillText('שמאל שמרני', pad + plotW * 0.25, pad + plotH * 0.08);
+  ctx.fillText('ימין שמרני', pad + plotW * 0.75, pad + plotH * 0.08);
+
+  // Labels
+  ctx.font = '600 12px Heebo';
+  ctx.fillStyle = '#5a6a7a';
+  ctx.textAlign = 'center';
+  ctx.fillText('שמאל', pad + plotW * 0.15, H - 10);
+  ctx.fillText('ימין', pad + plotW * 0.85, H - 10);
+  ctx.save();
+  ctx.translate(12, pad + plotH * 0.85);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('ליברלי', 0, 0);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(12, pad + plotH * 0.15);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('שמרני', 0, 0);
+  ctx.restore();
+
+  // Plot parties
+  let legendHtml = '';
+  parties.forEach(p => {
+    const px = (p.econ + p.def) / 2;
+    const py = (p.auth + p.relig) / 2;
+    const x = pad + ((px - 0.5) / 10) * plotW;
+    const y = pad + plotH - ((py - 0.5) / 10) * plotH;
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.threshold ? 0.5 : 0.8;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.font = '500 10px Heebo';
+    ctx.fillStyle = '#3a4a5a';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, x, y - 14);
+
+    legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${p.color};${p.threshold ? 'opacity:0.5':''}"></div>${p.name}</div>`;
+  });
+
+  // Plot user
+  const ux = pad + ((combinedScores.x - 0.5) / 10) * plotW;
+  const uy = pad + plotH - ((combinedScores.y - 0.5) / 10) * plotH;
+  ctx.beginPath();
+  ctx.arc(ux, uy, 12, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(13,71,161,0.85)';
+  ctx.fill();
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.font = '700 10px Heebo';
+  ctx.fillStyle = 'white';
+  ctx.textAlign = 'center';
+  ctx.fillText('אתה', ux, uy + 4);
+
+  document.getElementById('legend3').innerHTML = legendHtml;
+}
+
+// ===== AXIS BREAKDOWN =====
+function drawAxisBreakdown(scores, ranked) {
+  const axisInfo = [
+    { key: 'econ', name: 'כלכלה', left: 'שמאל כלכלי', right: 'ימין כלכלי', color: 'var(--econ-color)', leftColor: '#1976D2', rightColor: '#c62828' },
+    { key: 'auth', name: 'סמכות', left: 'ליברלי', right: 'סמכותני', color: 'var(--auth-color)', leftColor: '#2e7d32', rightColor: '#6a1b9a' },
+    { key: 'relig', name: 'דת ומדינה', left: 'חילוני', right: 'דתי', color: 'var(--relig-color)', leftColor: '#00838f', rightColor: '#5d4037' },
+    { key: 'def', name: 'ביטחון', left: 'יוני (שמאל)', right: 'ניצי (ימין)', color: 'var(--def-color)', leftColor: '#1976D2', rightColor: '#c62828' },
+  ];
+
+  let html = '';
+  axisInfo.forEach(axis => {
+    const userVal = scores[axis.key];
+    // Center is 5.5 (middle of 1-10)
+    const center = 5.5;
+    const deviation = userVal - center; // negative = left, positive = right
+    const deviationPct = Math.abs(deviation) / 4.5 * 50; // max 50% from center
+    const isRight = deviation >= 0;
+    const barColor = isRight ? axis.rightColor : axis.leftColor;
+    const label = isRight ? axis.right : axis.left;
+
+    // Bar position: center is at 50%
+    const barLeft = isRight ? 50 : (50 - deviationPct);
+    const barWidth = deviationPct;
+
+    // User marker position: 0% = value 1 (far left), 100% = value 10 (far right)
+    const userPct = ((userVal - 1) / 9) * 100;
+
+    html += `<div class="axis-row">
+      <div class="axis-title">
+        <span style="color:${axis.color}">${axis.name}</span>
+        <span style="color:${barColor};font-weight:700;">${label} (${userVal.toFixed(1)})</span>
+      </div>
+      <div class="axis-bar-container" style="direction:ltr;position:relative;">
+        <!-- Center line -->
+        <div style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(0,0,0,0.15);z-index:1;"></div>
+        <!-- Fill bar from center -->
+        <div style="position:absolute;top:0;bottom:0;left:${barLeft}%;width:${barWidth}%;background:${barColor};opacity:0.25;border-radius:${isRight ? '0 15px 15px 0' : '15px 0 0 15px'};"></div>
+        <!-- User marker -->
+        <div class="axis-marker user-marker" style="left:${userPct}%;border-color:${barColor};background:${barColor}33;"></div>`;
+
+    // Show top 3 party markers
+    ranked.slice(0, 3).forEach(p => {
+      const pPct = ((p[axis.key] - 1) / 9) * 100;
+      html += `<div style="position:absolute;top:50%;left:${pPct}%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:${p.color};border:1px solid rgba(0,0,0,0.2);z-index:2;" title="${p.name}"></div>`;
+    });
+
+    html += `</div>
+      <div class="axis-labels" style="direction:ltr;">
+        <span>${axis.left}</span>
+        <span style="opacity:0.4;">מרכז</span>
+        <span>${axis.right}</span>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('axisBreakdown').innerHTML = html;
+}
+
+// ===== PARTY INFO CARDS =====
+// ===== INFLUENCER MATCHING =====
+function drawInfluencerCards(scores) {
+  // Use priority weights for influencer matching too
+  const pw = getPriorityWeights();
+  const ranked = influencers.map(inf => {
+    const dx = (scores.econ - inf.econ) * Math.sqrt(pw.econ || 1);
+    const da = (scores.auth - inf.auth) * Math.sqrt(pw.auth || 1);
+    const dr = (scores.relig - inf.relig) * Math.sqrt(pw.relig || 1);
+    const dd = (scores.def - inf.def) * Math.sqrt(pw.def || 1);
+    const dist = Math.sqrt(dx*dx + da*da + dr*dr + dd*dd);
+    const maxDist = 22;
+    const match = Math.max(0, Math.round((1 - dist / maxDist) * 100));
+    return { ...inf, distance: dist, match };
+  }).sort((a, b) => a.distance - b.distance);
+
+  const top3 = ranked.slice(0, 3);
+  let html = '';
+
+  top3.forEach(inf => {
+    const initials = inf.name.split(' ').map(w => w[0]).join('');
+    const imgHtml = inf.img
+      ? `<img class="inf-img" src="${inf.img}" alt="${inf.name}" onerror="this.outerHTML='<div class=\\'inf-initials\\'>${initials}</div>'">`
+      : `<div class="inf-initials">${initials}</div>`;
+
+    html += `<div class="influencer-card">
+      ${imgHtml}
+      <div class="inf-name">${inf.name}</div>
+      <div class="inf-role">${inf.role}</div>
+      <div class="inf-desc">${inf.desc}</div>
+      <div class="inf-match">${inf.match}%</div>
+      <div style="font-size:0.75rem;color:var(--text-dim);">התאמה</div>
+    </div>`;
+  });
+
+  document.getElementById('influencerCards').innerHTML = html;
+}
+
+function drawPartyInfoCards(ranked) {
+  const top5 = ranked.slice(0, 5);
+  let html = '';
+
+  top5.forEach((p, i) => {
+    if (!p.info) return;
+    const expandedClass = i === 0 ? 'expanded' : '';
+    html += `
+    <div class="party-info-card ${expandedClass}" onclick="this.classList.toggle('expanded')">
+      <div class="party-info-header">
+        <img src="${p.img}" alt="${p.leader}" onerror="this.style.display='none'">
+        <div class="info-title">
+          <div class="party-name-sm">${p.name}</div>
+          <div class="leader-name-sm">${p.leader}</div>
+        </div>
+        <span class="match-badge">${p.match}%</span>
+        <span class="expand-arrow">▼</span>
+      </div>
+      <div class="party-info-body">
+        <div class="party-info-content">
+          <div class="info-section">
+            <h4>אידיאולוגיה</h4>
+            <p>${p.info.ideology}</p>
+          </div>
+          <div class="info-section">
+            <h4>על המנהיג</h4>
+            <p>${p.info.leaderBio}</p>
+          </div>
+          <div class="info-section">
+            <h4>חברים בולטים</h4>
+            <div class="info-members">
+              ${p.info.members.map(m => `<span class="member-tag">${m}</span>`).join('')}
+            </div>
+          </div>
+          <div class="info-section">
+            <div class="pros-cons">
+              <div class="pro">
+                <h5>מה שתומכים אומרים</h5>
+                ${p.info.pro}
+              </div>
+              <div class="con">
+                <h5>מה שמבקרים אומרים</h5>
+                ${p.info.con}
+              </div>
+            </div>
+          </div>
+          ${p.threshold ? '<p style="color:var(--warning);font-size:0.8rem;margin-top:10px;">* מפלגה זו קרובה לאחוז החסימה בסקרים</p>' : ''}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('partyInfoCards').innerHTML = html;
+}
+
+// ===== AGREEMENT BARS =====
+function drawAgreement() {
+  const agreement = calculateLawsAgreement();
+
+  document.getElementById('agreementSection').innerHTML = `
+    <div class="agreement-bar-wrapper">
+      <div class="agreement-bar-label">
+        <span>קואליציה (ליכוד, ש"ס, יהדות התורה, עוצמה יהודית, הציונות הדתית)</span>
+        <span style="color:#e17055;">${agreement.coalition}%</span>
+      </div>
+      <div class="agreement-bar-outer">
+        <div class="agreement-bar-inner coalition-bar" style="width:${agreement.coalition}%">${agreement.coalition}%</div>
+      </div>
+    </div>
+    <div class="agreement-bar-wrapper">
+      <div class="agreement-bar-label">
+        <span>אופוזיציה (יש עתיד, הדמוקרטים, ישראל ביתנו, ישר!)</span>
+        <span style="color:#0984e3;">${agreement.opposition}%</span>
+      </div>
+      <div class="agreement-bar-outer">
+        <div class="agreement-bar-inner opposition-bar" style="width:${agreement.opposition}%">${agreement.opposition}%</div>
+      </div>
+    </div>
+    <p style="color:var(--text-dim);font-size:0.8rem;margin-top:10px;text-align:center;">
+      * ההסכמה מחושבת לפי התשובות שלך על חוקים אמיתיים שעלו בכנסת ה-25. מקור החוק (קואליציה/אופוזיציה) לא נחשף בזמן השאלון.
+    </p>
+  `;
+}
+
+// ===== SUMMARY =====
+function drawSummary(scores, ranked) {
+  const econLabel = scores.econ <= 3.5 ? "שמאל כלכלי" : scores.econ <= 6.5 ? "מרכז כלכלי" : "ימין כלכלי";
+  const authLabel = scores.auth <= 3.5 ? "ליברלי" : scores.auth <= 6.5 ? "מתון" : "סמכותני";
+  const religLabel = scores.relig <= 3.5 ? "חילוני" : scores.relig <= 6.5 ? "מסורתי" : "דתי";
+  const defLabel = scores.def <= 3.5 ? "יוני (שמאל ביטחוני)" : scores.def <= 6.5 ? "מרכז ביטחוני" : "ניצי (ימין ביטחוני)";
+
+  const top3 = ranked.slice(0, 3);
+
+  // Generate insight about right-wing anti-Bibi options
+  const isRightWing = scores.def >= 6 || scores.econ >= 6;
+  const isAntiCoalition = scores.camp < 5;
+  const agreement = calculateLawsAgreement();
+  const disagreesWithCoalition = agreement.opposition > agreement.coalition;
+
+  let insight = '';
+  if (isRightWing && (isAntiCoalition || disagreesWithCoalition)) {
+    // Right-wing person who disagrees with current coalition
+    const rightAntibibi = ranked.filter(p =>
+      ['בנט 2026', '!ישר', 'ישראל ביתנו'].includes(p.name)
+    ).slice(0, 2);
+    if (rightAntibibi.length > 0) {
+      insight = `<div style="background:rgba(0,206,201,0.1);border:1px solid var(--secondary);border-radius:12px;padding:15px;margin-top:15px;">
+        <p><strong>שים/י לב:</strong> העמדות שלך ימניות, אבל אתה לא בהכרח מסכים/ה עם מה שהקואליציה הנוכחית עושה בפועל.
+        יש מפלגות ימניות שחולקות את העמדות הביטחוניות והכלכליות שלך בלי הרכיבים האחרים של הקואליציה:</p>
+        <ul style="margin-top:8px;padding-right:20px;">
+          ${rightAntibibi.map(p => `<li><strong>${p.name}</strong> (${p.leader}) - ${p.match}% התאמה</li>`).join('')}
+        </ul>
+        <p style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">ימין לא חייב להיות שם נרדף לקואליציה הנוכחית. בדקו את העמדות בפועל.</p>
+      </div>`;
+    }
+  } else if (!isRightWing && !isAntiCoalition) {
+    // Left/center person who agrees with coalition - unusual, show them the data
+    insight = `<div style="background:rgba(253,203,110,0.1);border:1px solid var(--warning);border-radius:12px;padding:15px;margin-top:15px;">
+      <p><strong>מעניין:</strong> העמדות שלך נוטות למרכז-שמאל, אבל הסכמת עם חלק מחוקי הקואליציה. שווה לבדוק האם ההסכמה היא עם הכיוון הכללי או עם חוקים ספציפיים.</p>
+    </div>`;
+  }
+
+  document.getElementById('summaryCard').innerHTML = `
+    <h2>סיכום הפרופיל שלך</h2>
+    <p><strong>כלכלה:</strong> ${econLabel} (${scores.econ.toFixed(1)}/10)</p>
+    <p><strong>סמכות:</strong> ${authLabel} (${scores.auth.toFixed(1)}/10)</p>
+    <p><strong>דת ומדינה:</strong> ${religLabel} (${scores.relig.toFixed(1)}/10)</p>
+    <p><strong>ביטחון:</strong> ${defLabel} (${scores.def.toFixed(1)}/10)</p>
+    <br>
+    <p><strong>סדר העדיפויות שלך:</strong> ${axisOrder.map((a, i) => `${i+1}. ${axisPriorityInfo[a].name}`).join(' | ')}</p>
+    <br>
+    <p>המפלגה הקרובה ביותר לעמדותיך היא <strong>${top3[0].name}</strong> (${top3[0].match}% התאמה), ואחריה <strong>${top3[1].name}</strong> (${top3[1].match}%) ו-<strong>${top3[2].name}</strong> (${top3[2].match}%).</p>
+    <br>
+    <p><strong>קואליציה מול אופוזיציה:</strong> ${(() => {
+      if (agreement.coalition > agreement.opposition + 15) return `נטייה ברורה לקואליציה (${agreement.coalition}% הסכמה עם חוקי הקואליציה מול ${agreement.opposition}% עם האופוזיציה)`;
+      if (agreement.opposition > agreement.coalition + 15) return `נטייה ברורה לאופוזיציה (${agreement.opposition}% הסכמה עם עמדות האופוזיציה מול ${agreement.coalition}% עם הקואליציה)`;
+      return `ללא נטייה ברורה (${agreement.coalition}% קואליציה, ${agreement.opposition}% אופוזיציה)`;
+    })()}</p>
+    ${insight}
+    <br>
+    <p style="color:var(--text-dim);font-size:0.85rem;">* השאלון הזה נועד לעזור לך לחשוב על העמדות שלך ואינו מהווה המלצה פוליטית. התוצאות מבוססות על קרבה מתמטית לעמדות המוצהרות של המפלגות.</p>
+  `;
+}
+
+// ===== LAWS DATA =====
+// Curated 5+5: diverse across axes, real laws from the 25th Knesset
+const laws = [
+  // === COALITION (5) - covers auth, relig, def ===
+  {
+    title: "רפורמה בוועדה לבחירת שופטים",
+    desc: "שינוי הרכב הוועדה לבחירת שופטים כך שלנציגים פוליטיים יהיה רוב על חשבון נציגי לשכת עורכי הדין.",
+    status: "passed",
+    statusText: "עבר (מרץ 2025)",
+    source: "coalition",
+    axes: { auth: 1, relig: 0, def: 0, econ: 0 }
+  },
+  {
+    title: "עונש מוות למחבלים",
+    desc: "עונש מוות בתלייה לפלסטינים שהורשעו בפעולות טרור קטלניות בבתי דין צבאיים. החוק לא חל רטרואקטיבית (לא על מחבלי 7.10), לא חל על אזרחי ישראל או תושבי קבע, ונאכף רק בבתי דין צבאיים.",
+    status: "passed",
+    statusText: "עבר (62-47)",
+    source: "coalition",
+    axes: { auth: 1, relig: 0, def: 1, econ: 0 }
+  },
+  {
+    title: "הרחבת סמכויות בתי דין רבניים",
+    desc: "הרחבת סמכות בתי הדין הרבניים לדון בסכסוכים אזרחיים כמו תעסוקה ושכנים.",
+    status: "passed",
+    statusText: "עבר (65-41)",
+    source: "coalition",
+    axes: { auth: 0, relig: 1, def: 0, econ: 0 }
+  },
+  {
+    title: "מתווה גיוס חרדים (ביסמוט)",
+    desc: "מתווה לגיוס הדרגתי של חרדים עם מכסות נמוכות וללא יעדי קרבי מחייבים. הוקפא.",
+    status: "rejected",
+    statusText: "הוקפא",
+    source: "coalition",
+    axes: { auth: 0, relig: 1, def: -0.5, econ: 0 }
+  },
+  {
+    title: "מיסוי 80% על תרומות זרות לעמותות",
+    desc: "מס של 80% על תרומות ממשלות זרות לעמותות ישראליות ושלילת זכות העמידה שלהן בבג\"ץ.",
+    status: "pending",
+    statusText: "בהליך חקיקה",
+    source: "coalition",
+    axes: { auth: 1, relig: 0, def: 0, econ: 0 }
+  },
+
+  // === OPPOSITION (5) - covers auth, relig, def ===
+  {
+    title: "ועדת חקירה ממלכתית ל-7 באוקטובר",
+    desc: "ועדת חקירה עצמאית בראשות שופט בג\"ץ לחקירת כשלי 7.10 במקום ועדה ממונה פוליטית.",
+    status: "rejected",
+    statusText: "נדחה (45-53)",
+    source: "opposition",
+    axes: { auth: -1, relig: 0, def: 0, econ: 0 }
+  },
+  {
+    title: "נישואים אזרחיים",
+    desc: "אפשרות חוקית לנישואים אזרחיים בישראל, ללא תלות ברבנות הראשית.",
+    status: "rejected",
+    statusText: "לא עבר",
+    source: "opposition",
+    axes: { auth: 0, relig: -1, def: 0, econ: 0 }
+  },
+  {
+    title: "גיוס שוויוני - שוויון בנטל",
+    desc: "גיוס שווה לכל האזרחים כולל חרדים, עם אכיפה מלאה ויעדים מחייבים.",
+    status: "rejected",
+    statusText: "לא עבר",
+    source: "opposition",
+    axes: { auth: 0, relig: -1, def: 0.5, econ: 0 }
+  },
+  {
+    title: "תחבורה ציבורית בשבת",
+    desc: "הפעלת אוטובוסים ורכבות בשבת ביישובים עם רוב חילוני.",
+    status: "rejected",
+    statusText: "נדחה (48-43)",
+    source: "opposition",
+    axes: { auth: 0, relig: -1, def: 0, econ: 0 }
+  },
+  {
+    title: "ביטול התיישנות על עבירות מין בקטינים",
+    desc: "ביטול מלא של תקופת ההתיישנות בעבירות מין שבוצעו בקטינים. עברה קריאה טרומית פה אחד (41-0) אך משרד המשפטים חסם את החוק המלא.",
+    status: "rejected",
+    statusText: "נחסם על ידי הקואליציה",
+    source: "opposition",
+    axes: { auth: -0.5, relig: 0, def: 0, econ: 0 }
+  },
+];
+
+// Shuffle laws so coalition and opposition are mixed
+const shuffledLaws = [...laws].sort(() => Math.random() - 0.5);
+let currentLaw = 0;
+let lawAnswers = new Array(laws.length).fill(null);
+// Map shuffled index to original
+let lawShuffleMap = shuffledLaws.map(sl => laws.indexOf(sl));
+
+// ===== LAWS PHASE LOGIC =====
+// ===== PRIORITY RANKING =====
+let axisOrder = ['def', 'relig', 'econ', 'auth']; // default order
+const axisPriorityInfo = {
+  econ: { name: 'כלכלה', desc: 'מיסים, רווחה, שוק חופשי, שכר מינימום', color: 'var(--econ-color)' },
+  auth: { name: 'סמכות ודמוקרטיה', desc: 'בג"ץ, חופש ביטוי, זכויות פרט, שלטון חוק', color: 'var(--auth-color)' },
+  relig: { name: 'דת ומדינה', desc: 'שבת, נישואים, גיוס חרדים, זכויות להט"ב', color: 'var(--relig-color)' },
+  def: { name: 'ביטחון', desc: 'צבא, שטחים, משא ומתן, הסכמי שלום', color: 'var(--def-color)' },
+};
+
+function startPriorityPhase() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('priorityPhase').style.display = 'block';
+  window.scrollTo(0, 0);
+  renderPriorityList();
+}
+
+function renderPriorityList() {
+  let html = '';
+  axisOrder.forEach((axis, i) => {
+    const info = axisPriorityInfo[axis];
+    html += `<div class="priority-item" data-axis="${axis}">
+      <div class="priority-rank">${i + 1}</div>
+      <div class="priority-info">
+        <div class="pri-name" style="color:${info.color}">${info.name}</div>
+        <div class="pri-desc">${info.desc}</div>
+      </div>
+      <div class="priority-arrows">
+        <button onclick="movePriority('${axis}', -1)" ${i === 0 ? 'disabled' : ''}>▲</button>
+        <button onclick="movePriority('${axis}', 1)" ${i === axisOrder.length - 1 ? 'disabled' : ''}>▼</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('priorityList').innerHTML = html;
+}
+
+function movePriority(axis, direction) {
+  const idx = axisOrder.indexOf(axis);
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= axisOrder.length) return;
+  // Swap
+  [axisOrder[idx], axisOrder[newIdx]] = [axisOrder[newIdx], axisOrder[idx]];
+  renderPriorityList();
+}
+
+function getPriorityWeights() {
+  // Position 0 (most important) = weight 2.0, position 3 (least) = weight 0.7
+  const weightMap = [2.0, 1.4, 1.0, 0.7];
+  const weights = {};
+  axisOrder.forEach((axis, i) => {
+    weights[axis] = weightMap[i];
+  });
+  return weights;
+}
+
+function finishPriority() {
+  document.getElementById('priorityPhase').style.display = 'none';
+  startLawsPhase();
+}
+
+function startLawsPhase() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('lawsPhase').style.display = 'block';
+  window.scrollTo(0, 0);
+  currentLaw = 0;
+  showLaw();
+}
+
+function showLaw() {
+  const law = shuffledLaws[currentLaw];
+
+  // Progress
+  document.getElementById('lawsProgressFill').style.width = ((currentLaw / shuffledLaws.length) * 100) + '%';
+  document.getElementById('lawsProgressLabel').textContent = `חוק ${currentLaw + 1} מתוך ${shuffledLaws.length}`;
+  // Don't reveal source during quiz to avoid bias!
+  document.getElementById('lawsSourceTag').textContent = 'חוקים';
+  document.getElementById('lawsSourceTag').style.background = 'var(--primary)';
+
+  const likertLabels = ["מסכים/ה מאוד", "מסכים/ה", "ניטרלי", "לא מסכים/ה", "לא מסכים/ה בכלל"];
+  const origIdx = lawShuffleMap[currentLaw];
+
+  let html = `<div class="law-card">
+    <div class="law-title">${law.title}</div>
+    <div class="law-desc">${law.desc}</div>
+    <div class="likert-options">`;
+
+  for (let i = 1; i <= 5; i++) {
+    const selected = lawAnswers[origIdx] === i ? 'selected' : '';
+    html += `<button class="likert-btn ${selected}" onclick="selectLawAnswer(${i})">${likertLabels[i-1]}</button>`;
+  }
+
+  html += `</div></div>`;
+  document.getElementById('lawArea').innerHTML = html;
+
+  // Nav buttons
+  document.getElementById('lawPrevBtn').disabled = currentLaw === 0;
+  document.getElementById('lawNextBtn').textContent = currentLaw === shuffledLaws.length - 1 ? 'לתוצאות' : 'הבא';
+  document.getElementById('lawNextBtn').disabled = lawAnswers[origIdx] === null;
+}
+
+function selectLawAnswer(val) {
+  const origIdx = lawShuffleMap[currentLaw];
+  lawAnswers[origIdx] = val;
+  document.querySelectorAll('.likert-btn').forEach((btn, i) => {
+    btn.classList.toggle('selected', i === val - 1);
+  });
+  document.getElementById('lawNextBtn').disabled = false;
+  // Auto-advance
+  setTimeout(() => {
+    if (currentLaw < shuffledLaws.length - 1) {
+      nextLaw();
+    } else {
+      showResults();
+    }
+  }, 250);
+}
+
+function nextLaw() {
+  if (currentLaw < shuffledLaws.length - 1) {
+    currentLaw++;
+    showLaw();
+  } else {
+    showResults();
+  }
+}
+
+function prevLaw() {
+  if (currentLaw > 0) {
+    currentLaw--;
+    showLaw();
+  }
+}
+
+function calculateLawsAgreement() {
+  let coalitionTotal = 0, coalitionCount = 0;
+  let oppositionTotal = 0, oppositionCount = 0;
+
+  laws.forEach((law, i) => {
+    if (lawAnswers[i] === null) return;
+    // Convert 1-5 to agreement: 1=strongly agree=100%, 5=strongly disagree=0%
+    const agreement = (5 - lawAnswers[i]) / 4 * 100;
+
+    if (law.source === 'coalition') {
+      coalitionTotal += agreement;
+      coalitionCount++;
+    } else {
+      oppositionTotal += agreement;
+      oppositionCount++;
+    }
+  });
+
+  return {
+    coalition: coalitionCount > 0 ? Math.round(coalitionTotal / coalitionCount) : 50,
+    opposition: oppositionCount > 0 ? Math.round(oppositionTotal / oppositionCount) : 50,
+  };
+}
+
+function getLawsAxisBoost() {
+  // Calculate how laws answers should nudge axis scores (light influence)
+  const boost = { econ: 0, auth: 0, relig: 0, def: 0 };
+  let count = 0;
+
+  laws.forEach((law, i) => {
+    if (lawAnswers[i] === null) return;
+    // agreement: 1=strongly agree → +1, 5=strongly disagree → -1
+    const agree = (3 - lawAnswers[i]) / 2; // range: -1 to +1
+    for (const axis of ['econ', 'auth', 'relig', 'def']) {
+      if (law.axes[axis] !== 0) {
+        boost[axis] += agree * law.axes[axis];
+        count++;
+      }
+    }
+  });
+
+  // Normalize: light influence, max ~1 point shift per axis
+  const scale = count > 0 ? 1.0 / (count / 4) : 0;
+  for (const axis of ['econ', 'auth', 'relig', 'def']) {
+    boost[axis] = Math.max(-1, Math.min(1, boost[axis] * scale));
+  }
+  return boost;
+}
+
+// ===== RESTART =====
+function restart() {
+  currentQ = 0;
+  currentLaw = 0;
+  answers = new Array(questions.length).fill(null);
+  lawAnswers = new Array(laws.length).fill(null);
+  axisOrder = ['def', 'relig', 'econ', 'auth'];
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('lawsPhase').style.display = 'none';
+  document.getElementById('priorityPhase').style.display = 'none';
+  document.getElementById('welcome').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+// ===== UTILS =====
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+</script>
+</body>
+</html>
