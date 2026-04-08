@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "mcp__Claude_Preview__preview_start",
+      "WebFetch(domain:www.timesofisrael.com)",
+      "WebFetch(domain:www.jpost.com)",
+      "WebFetch(domain:zoha.org.il)",
+      "WebFetch(domain:news.walla.co.il)",
+      "WebFetch(domain:www.maariv.co.il)",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:upload.wikimedia.org)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:he.wikipedia.org)",
+      "Bash(gh auth:*)",
+      "Bash(git --version)"
+    ]
+  }
+}
