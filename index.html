@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="he" dir="rtl" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,6 +92,32 @@
     margin: 0 auto;
     padding: 20px;
   }
+
+  /* ===== LANGUAGE TOGGLE ===== */
+  .lang-toggle {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 500;
+    background: white;
+    border: 2px solid #0d47a1;
+    color: #0d47a1;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s;
+  }
+
+  .lang-toggle:hover {
+    background: #0d47a1;
+    color: white;
+  }
+
+  html[lang="en"] .lang-toggle { right: 15px; left: auto; }
 
   /* ===== WELCOME SCREEN ===== */
   #welcome {
@@ -895,6 +921,69 @@
     transition: width 1s ease;
   }
 
+  /* ===== POLLS SECTION ===== */
+  .poll-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .poll-row .poll-img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--card-border);
+    flex-shrink: 0;
+  }
+
+  .poll-row .poll-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    min-width: 100px;
+    text-align: start;
+  }
+
+  .poll-bar-outer {
+    flex: 1;
+    height: 26px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 13px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .poll-bar-outer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(4 / 30 * 100%);
+    width: 2px;
+    background: rgba(198,40,40,0.3);
+    z-index: 2;
+  }
+
+  .poll-bar-inner {
+    height: 100%;
+    border-radius: 13px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: white;
+    transition: width 1s ease;
+  }
+
+  .poll-row .poll-seats {
+    font-size: 0.85rem;
+    font-weight: 800;
+    min-width: 40px;
+    text-align: end;
+  }
+
   /* ===== KNESSET SIMULATOR ===== */
   .knesset-hemicycle {
     position: relative;
@@ -1141,6 +1230,9 @@
 </head>
 <body>
 
+<!-- ===== LANGUAGE TOGGLE ===== -->
+<button class="lang-toggle" id="langToggle" onclick="toggleLanguage()">EN</button>
+
 <!-- ===== WELCOME ===== -->
 <div class="container" id="welcome">
   <div class="logo">המצפן הפוליטי</div>
@@ -1299,6 +1391,14 @@
   </div>
 
   <div class="chart-section">
+    <h2>סקרי בחירות עדכניים</h2>
+    <p class="chart-desc">ממוצע סקרים - 2026. קו החסימה: 4 מנדטים (3.25%)</p>
+    <div class="chart-container" style="flex-direction:column;align-items:stretch;">
+      <div id="pollsSection"></div>
+    </div>
+  </div>
+
+  <div class="chart-section">
     <h2>איך אחרים ענו</h2>
     <p class="chart-desc">סטטיסטיקות אנונימיות מכל מי שמילא את השאלון</p>
     <div id="anonStats" class="stats-section"></div>
@@ -1328,264 +1428,583 @@
 </div>
 
 <script>
+// ===== TRANSLATION SYSTEM =====
+let currentLang = 'he';
+
+const translations = {
+  he: {
+    // Welcome
+    logo: "המצפן הפוליטי",
+    subtitle: "גלו את העמדות הפוליטיות שלכם ואת המפלגה הקרובה אליכם ביותר.",
+    subtitle2: "54 שאלות, 4 צירים, ללא פופוליזם.",
+    axis_econ: "כלכלה", axis_econ_range: "שמאל ← ימין",
+    axis_auth: "סמכות", axis_auth_range: "ליברלי ← סמכותני",
+    axis_relig: "דת ומדינה", axis_relig_range: "חילוני ← דתי",
+    axis_def: "ביטחון", axis_def_range: "יוני ← ניצי",
+    startBtn: "בואו נתחיל",
+    // Quiz
+    questionOf: "שאלה {current} מתוך {total}",
+    questionLabel: "שאלה {current} / {total}",
+    prev: "הקודם",
+    next: "הבא",
+    finish: "סיום",
+    // Likert
+    likert_1: "מסכים/ה מאוד",
+    likert_2: "מסכים/ה",
+    likert_3: "ניטרלי",
+    likert_4: "לא מסכים/ה",
+    likert_5: "לא מסכים/ה בכלל",
+    // Axis tags
+    tag_econ: "כלכלה",
+    tag_auth: "סמכות",
+    tag_relig: "דת ומדינה",
+    tag_def: "ביטחון",
+    tag_ident: "זהות",
+    tag_camp: "מחנאות",
+    // Priority phase
+    priority_title: "מה הכי חשוב לך?",
+    priority_sub1: "דרגו את הנושאים לפי החשיבות שלהם עבורכם.",
+    priority_sub2: "הנושא שבמקום הראשון ישפיע הכי הרבה על ההתאמה שלכם למפלגה.",
+    priority_continue: "המשך לחוקים",
+    pri_econ: "כלכלה",
+    pri_econ_desc: "מיסים, רווחה, שוק חופשי, שכר מינימום",
+    pri_auth: "סמכות ודמוקרטיה",
+    pri_auth_desc: 'בג"ץ, חופש ביטוי, זכויות פרט, שלטון חוק',
+    pri_relig: "דת ומדינה",
+    pri_relig_desc: 'שבת, נישואים, גיוס חרדים, זכויות להט"ב',
+    pri_def: "ביטחון",
+    pri_def_desc: "צבא, שטחים, משא ומתן, הסכמי שלום",
+    // Laws phase
+    laws_title: "שלב 2: חוקים אמיתיים",
+    laws_sub1: "עכשיו נבדוק את העמדות שלך מול חוקים אמיתיים שעלו בכנסת ה-25.",
+    laws_sub2: "לכל חוק, ציינו כמה אתם מסכימים איתו. התוצאות ישפיעו על ההתאמה הסופית.",
+    lawOf: "חוק {current} מתוך {total}",
+    lawsTag: "חוקים",
+    toResults: "לתוצאות",
+    // Results
+    results_title: "התוצאות שלך",
+    results_sub: "הנה הפרופיל הפוליטי שלך",
+    closest_party: "המפלגה הקרובה אליך ביותר",
+    match: "התאמה",
+    threshold_warning: "* מפלגה זו קרובה לאחוז החסימה בסקרים",
+    threshold_short: "קרוב לאחוז החסימה",
+    radar_title: "פרופיל הצירים שלך",
+    radar_desc: "תרשים עכביש - ארבעת הצירים",
+    compass_title: "המצפן הפוליטי שלך",
+    compass_desc: "ציר X = שמאל-ימין כללי (כלכלה+ביטחון), ציר Y = שמרני-ליברלי (סמכות+דת)",
+    breakdown_title: "פירוט לפי ציר",
+    parties_title: "הכר את המפלגות שלך",
+    parties_desc: "לחצו על מפלגה לפרטים נוספים",
+    influencers_title: "אישים שחושבים כמוך",
+    influencers_desc: "3 דמויות פוליטיות עם עמדות הכי קרובות לשלך",
+    knesset_title: "הכנסת החלומית שלך",
+    knesset_desc: "חלוקת מושבים לפי ההתאמה שלך למפלגות (120 מושבים)",
+    polls_title: "סקרי בחירות עדכניים",
+    polls_desc: "ממוצע סקרים - 2026. קו החסימה: 4 מנדטים (3.25%)",
+    stats_title: "איך אחרים ענו",
+    stats_desc: "סטטיסטיקות אנונימיות מכל מי שמילא את השאלון",
+    coalition_title: "קואליציה מול אופוזיציה",
+    coalition_desc: "כמה הסכמת עם חוקי הקואליציה לעומת הצעות האופוזיציה",
+    coalition: "קואליציה",
+    opposition: "אופוזיציה",
+    shareBtn: "שתף תוצאות",
+    restart: "התחל מחדש",
+    // Share card
+    share_title: "המצפן הפוליטי",
+    share_sub: "התוצאות שלי",
+    share_download: "הורד תמונה",
+    share_close: "סגור",
+    // Summary
+    summary_title: "סיכום הפרופיל שלך",
+    label_economy: "כלכלה:",
+    label_authority: "סמכות:",
+    label_religion: "דת ומדינה:",
+    label_defense: "ביטחון:",
+    label_priorities: "סדר העדיפויות שלך:",
+    // Info card
+    info_ideology: "אידיאולוגיה",
+    info_leader: "על המנהיג",
+    info_members: "חברים בולטים",
+    info_pro: "מה שתומכים אומרים",
+    info_con: "מה שמבקרים אומרים",
+    // Axis labels
+    al_econ_left: "שמאל כלכלי", al_econ_right: "ימין כלכלי",
+    al_auth_left: "ליברלי", al_auth_right: "סמכותני",
+    al_relig_left: "חילוני", al_relig_right: "דתי",
+    al_def_left: "יוני (שמאל)", al_def_right: "ניצי (ימין)",
+    center: "מרכז",
+    you: "אתה",
+    based_on: "מבוסס על {n} משתתפים",
+    popular_parties: "המפלגות הפופולריות",
+    need_more_stats: "צריך לפחות 2 משתתפים כדי להציג סטטיסטיקות. שתפו עם חברים!",
+    seats: "מנדטים",
+  },
+  en: {
+    // Welcome
+    logo: "The Political Compass",
+    subtitle: "Discover your political positions and the party closest to you.",
+    subtitle2: "54 questions, 4 axes, no populism.",
+    axis_econ: "Economy", axis_econ_range: "Left ← Right",
+    axis_auth: "Authority", axis_auth_range: "Liberal ← Authoritarian",
+    axis_relig: "Religion & State", axis_relig_range: "Secular ← Religious",
+    axis_def: "Defense", axis_def_range: "Dovish ← Hawkish",
+    startBtn: "Let's Start",
+    // Quiz
+    questionOf: "Question {current} of {total}",
+    questionLabel: "Question {current} / {total}",
+    prev: "Previous",
+    next: "Next",
+    finish: "Finish",
+    // Likert
+    likert_1: "Strongly Agree",
+    likert_2: "Agree",
+    likert_3: "Neutral",
+    likert_4: "Disagree",
+    likert_5: "Strongly Disagree",
+    // Axis tags
+    tag_econ: "Economy",
+    tag_auth: "Authority",
+    tag_relig: "Religion & State",
+    tag_def: "Defense",
+    tag_ident: "Identity",
+    tag_camp: "Camp",
+    // Priority phase
+    priority_title: "What matters most to you?",
+    priority_sub1: "Rank the topics by their importance to you.",
+    priority_sub2: "The topic ranked first will have the greatest impact on your party match.",
+    priority_continue: "Continue to Laws",
+    pri_econ: "Economy",
+    pri_econ_desc: "Taxes, welfare, free market, minimum wage",
+    pri_auth: "Authority & Democracy",
+    pri_auth_desc: "Supreme Court, free speech, individual rights, rule of law",
+    pri_relig: "Religion & State",
+    pri_relig_desc: "Sabbath, marriage, Haredi draft, LGBTQ+ rights",
+    pri_def: "Defense",
+    pri_def_desc: "Military, territories, negotiations, peace deals",
+    // Laws phase
+    laws_title: "Phase 2: Real Laws",
+    laws_sub1: "Now let's check your positions against real laws from the 25th Knesset.",
+    laws_sub2: "For each law, indicate how much you agree. Results will affect the final match.",
+    lawOf: "Law {current} of {total}",
+    lawsTag: "Laws",
+    toResults: "To Results",
+    // Results
+    results_title: "Your Results",
+    results_sub: "Here's your political profile",
+    closest_party: "Your Closest Party",
+    match: "Match",
+    threshold_warning: "* This party is near the electoral threshold in polls",
+    threshold_short: "Near threshold",
+    radar_title: "Your Axis Profile",
+    radar_desc: "Spider chart - four axes",
+    compass_title: "Your Political Compass",
+    compass_desc: "X-axis = overall left-right (economy+defense), Y-axis = conservative-liberal (authority+religion)",
+    breakdown_title: "Axis Breakdown",
+    parties_title: "Meet Your Parties",
+    parties_desc: "Click a party for more details",
+    influencers_title: "People Who Think Like You",
+    influencers_desc: "3 political figures with positions closest to yours",
+    knesset_title: "Your Dream Knesset",
+    knesset_desc: "Seat distribution based on your party matches (120 seats)",
+    polls_title: "Recent Election Polls",
+    polls_desc: "Polling averages - 2026. Threshold line: 4 seats (3.25%)",
+    stats_title: "How Others Answered",
+    stats_desc: "Anonymous statistics from everyone who took the quiz",
+    coalition_title: "Coalition vs Opposition",
+    coalition_desc: "How much you agreed with coalition laws vs opposition proposals",
+    coalition: "Coalition",
+    opposition: "Opposition",
+    shareBtn: "Share Results",
+    restart: "Restart",
+    // Share card
+    share_title: "The Political Compass",
+    share_sub: "My Results",
+    share_download: "Download Image",
+    share_close: "Close",
+    // Summary
+    summary_title: "Your Profile Summary",
+    label_economy: "Economy:",
+    label_authority: "Authority:",
+    label_religion: "Religion & State:",
+    label_defense: "Defense:",
+    label_priorities: "Your priorities:",
+    // Info card
+    info_ideology: "Ideology",
+    info_leader: "About the Leader",
+    info_members: "Notable Members",
+    info_pro: "What Supporters Say",
+    info_con: "What Critics Say",
+    // Axis labels
+    al_econ_left: "Economic Left", al_econ_right: "Economic Right",
+    al_auth_left: "Liberal", al_auth_right: "Authoritarian",
+    al_relig_left: "Secular", al_relig_right: "Religious",
+    al_def_left: "Dovish (Left)", al_def_right: "Hawkish (Right)",
+    center: "Center",
+    you: "You",
+    based_on: "Based on {n} participants",
+    popular_parties: "Popular Parties",
+    need_more_stats: "Need at least 2 participants to show statistics. Share with friends!",
+    seats: "seats",
+  }
+};
+
+function t(key, replacements) {
+  let str = (translations[currentLang] && translations[currentLang][key]) || translations.he[key] || key;
+  if (replacements) {
+    for (const k in replacements) {
+      str = str.replace(new RegExp('\\{' + k + '\\}', 'g'), replacements[k]);
+    }
+  }
+  return str;
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === 'he' ? 'en' : 'he';
+  const html = document.documentElement;
+  html.lang = currentLang;
+  html.dir = currentLang === 'he' ? 'rtl' : 'ltr';
+  document.getElementById('langToggle').textContent = currentLang === 'he' ? 'EN' : 'עב';
+  applyTranslations();
+  // Re-render current screen
+  if (document.getElementById('quiz').style.display === 'block') showQuestion();
+  if (document.getElementById('priorityPhase').style.display === 'block') { renderPriorityList(); applyTranslations(); }
+  if (document.getElementById('lawsPhase').style.display === 'block') showLaw();
+  if (document.getElementById('results').style.display === 'block' && savedScores) {
+    // Recompute results with new language
+    const ranked = parties.map(p => ({
+      ...p,
+      distance: getPartyDistance(savedScores, p),
+      match: getMatchPercentage(getPartyDistance(savedScores, p))
+    })).sort((a,b) => a.distance - b.distance);
+    drawResults(savedScores, ranked);
+  }
+}
+
+function applyTranslations() {
+  // Welcome screen
+  const logo = document.querySelector('#welcome .logo');
+  if (logo) logo.textContent = t('logo');
+  const subtitle = document.querySelector('#welcome .subtitle');
+  if (subtitle) subtitle.innerHTML = t('subtitle') + '<br>' + t('subtitle2');
+
+  // Axis cards
+  const axisCards = document.querySelectorAll('#welcome .axis-card');
+  if (axisCards.length === 4) {
+    axisCards[0].querySelector('.label').textContent = t('axis_econ');
+    axisCards[0].querySelector('.range').textContent = t('axis_econ_range');
+    axisCards[1].querySelector('.label').textContent = t('axis_auth');
+    axisCards[1].querySelector('.range').textContent = t('axis_auth_range');
+    axisCards[2].querySelector('.label').textContent = t('axis_relig');
+    axisCards[2].querySelector('.range').textContent = t('axis_relig_range');
+    axisCards[3].querySelector('.label').textContent = t('axis_def');
+    axisCards[3].querySelector('.range').textContent = t('axis_def_range');
+  }
+
+  const startBtn = document.querySelector('#welcome .btn');
+  if (startBtn) startBtn.textContent = t('startBtn');
+
+  // Nav buttons
+  const prevBtn = document.getElementById('prevBtn');
+  if (prevBtn) prevBtn.textContent = t('prev');
+
+  // Priority phase
+  const priorityH2 = document.querySelector('#priorityPhase .laws-intro h2');
+  if (priorityH2) priorityH2.textContent = t('priority_title');
+  const priPs = document.querySelectorAll('#priorityPhase .laws-intro p');
+  if (priPs.length >= 2) {
+    priPs[0].textContent = t('priority_sub1');
+    priPs[1].textContent = t('priority_sub2');
+  }
+  const priBtn = document.querySelector('#priorityPhase .nav-buttons .primary');
+  if (priBtn) priBtn.textContent = t('priority_continue');
+
+  // Laws phase
+  const lawsH2 = document.querySelector('#lawsPhase .laws-intro h2');
+  if (lawsH2) lawsH2.textContent = t('laws_title');
+  const lawsPs = document.querySelectorAll('#lawsPhase .laws-intro p');
+  if (lawsPs.length >= 2) {
+    lawsPs[0].textContent = t('laws_sub1');
+    lawsPs[1].textContent = t('laws_sub2');
+  }
+  const lawPrevBtn = document.getElementById('lawPrevBtn');
+  if (lawPrevBtn) lawPrevBtn.textContent = t('prev');
+  const lawsSourceTag = document.getElementById('lawsSourceTag');
+  if (lawsSourceTag) lawsSourceTag.textContent = t('lawsTag');
+
+  // Results header
+  const resultsH1 = document.querySelector('#results .results-header h1');
+  if (resultsH1) resultsH1.textContent = t('results_title');
+  const resultsP = document.querySelector('#results .results-header p');
+  if (resultsP) resultsP.textContent = t('results_sub');
+
+  // Chart section headings
+  const chartSections = document.querySelectorAll('#results .chart-section');
+  const chartTitles = ['radar_title', 'compass_title', 'breakdown_title', 'parties_title', 'influencers_title', 'knesset_title', 'polls_title', 'stats_title', 'coalition_title'];
+  const chartDescs = ['radar_desc', 'compass_desc', null, 'parties_desc', 'influencers_desc', 'knesset_desc', 'polls_desc', 'stats_desc', 'coalition_desc'];
+  chartSections.forEach((section, i) => {
+    if (i < chartTitles.length) {
+      const h2 = section.querySelector('h2');
+      if (h2) h2.textContent = t(chartTitles[i]);
+      const desc = section.querySelector('.chart-desc');
+      if (desc && chartDescs[i]) desc.textContent = t(chartDescs[i]);
+    }
+  });
+
+  // Restart + share buttons
+  const shareBtn = document.querySelector('#results .btn');
+  if (shareBtn) shareBtn.textContent = t('shareBtn');
+  const restartBtn = document.querySelector('#results .restart-btn');
+  if (restartBtn) restartBtn.textContent = t('restart');
+
+  // Share overlay
+  const shareTitleEl = document.querySelector('#shareCardContent .share-title');
+  if (shareTitleEl) shareTitleEl.textContent = t('share_title');
+  const shareSubEl = document.querySelector('#shareCardContent .share-subtitle');
+  if (shareSubEl) shareSubEl.textContent = t('share_sub');
+  const shareDlBtn = document.querySelector('#shareCardContent .share-btn.download');
+  if (shareDlBtn) shareDlBtn.textContent = t('share_download');
+  const shareCloseBtn = document.querySelector('#shareCardContent .share-btn.close-share');
+  if (shareCloseBtn) shareCloseBtn.textContent = t('share_close');
+}
+
 // ===== PARTY DATA =====
 const parties = [
-  // ident = Zionist identity (hidden), camp = pro-Bibi(10) vs anti-Bibi(1) (hidden)
-  { name: "ליכוד", leader: "בנימין נתניהו", econ: 7, auth: 7, relig: 6, def: 7, ident: 9, camp: 10, color: "#1565C0", threshold: false,
+  { name: { he: "ליכוד", en: "Likud" }, leader: { he: "בנימין נתניהו", en: "Benjamin Netanyahu" }, econ: 7, auth: 7, relig: 6, def: 7, ident: 9, camp: 10, color: "#1565C0", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/74/Benjamin_Netanyahu%2C_February_2023.jpg/200px-Benjamin_Netanyahu%2C_February_2023.jpg",
     info: {
-      ideology: "מפלגת ימין ליברלית-לאומית. שוק חופשי, ביטחון קודם, זהות יהודית חזקה אך לא דתית קיצונית.",
-      leaderBio: "בנימין נתניהו, ראש ממשלה הכי ותיק בתולדות ישראל. שימש כשר אוצר ושר חוץ. מנהיג הליכוד מ-1993.",
-      members: ["ירив לוין", "ישראל כץ", "ניר ברקת", "מירי רגב"],
-      pro: "ניסיון מדיני ענק, הסכמי אברהם, ניהול כלכלי יציב יחסית.",
-      con: "כתב אישום על שוחד ומרמה, פולריזציה חברתית, תלות בקואליציה קיצונית."
+      ideology: { he: "מפלגת ימין ליברלית-לאומית. שוק חופשי, ביטחון קודם, זהות יהודית חזקה אך לא דתית קיצונית.", en: "Liberal-national right-wing party. Free market, security first, strong Jewish identity but not religiously extreme." },
+      leaderBio: { he: "בנימין נתניהו, ראש ממשלה הכי ותיק בתולדות ישראל. שימש כשר אוצר ושר חוץ. מנהיג הליכוד מ-1993.", en: "Benjamin Netanyahu, longest-serving Prime Minister in Israeli history. Former Finance and Foreign Minister. Leader of Likud since 1993." },
+      members: { he: ["יריב לוין", "ישראל כץ", "ניר ברקת", "מירי רגב"], en: ["Yariv Levin", "Israel Katz", "Nir Barkat", "Miri Regev"] },
+      pro: { he: "ניסיון מדיני ענק, הסכמי אברהם, ניהול כלכלי יציב יחסית.", en: "Vast diplomatic experience, Abraham Accords, relatively stable economic management." },
+      con: { he: "כתב אישום על שוחד ומרמה, פולריזציה חברתית, תלות בקואליציה קיצונית.", en: "Indictment for bribery and fraud, social polarization, dependence on an extreme coalition." }
     }},
-  { name: "בנט 2026", leader: "נפתלי בנט", econ: 8, auth: 5, relig: 3, def: 8, ident: 9, camp: 2, color: "#2E7D32", threshold: false,
+  { name: { he: "בנט 2026", en: "Bennett 2026" }, leader: { he: "נפתלי בנט", en: "Naftali Bennett" }, econ: 8, auth: 5, relig: 3, def: 8, ident: 9, camp: 2, color: "#2E7D32", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Naftali_Bennett_official_portrait.jpg/200px-Naftali_Bennett_official_portrait.jpg",
     info: {
-      ideology: "ימין חילוני-פרגמטי. שוק חופשי, הייטק, ביטחון נחרץ, הפרדת דת ממדינה, אנטי-ביבי.",
-      leaderBio: "נפתלי בנט, ראש ממשלה לשעבר (2021-2022). יזם הייטק, לשעבר ראש מועצת יש\"ע. חזר לפוליטיקה ב-2025.",
-      members: ["מתן כהנא (עבר לישר!)", "איילת שקד"],
-      pro: "ניסיון בראשות ממשלה, רקע עסקי, פרגמטי ולא אידיאולוגי קיצוני.",
-      con: "שבר הבטחה לא לשבת עם לפיד, מפלגה חדשה ללא מסד בוחרים מוכח."
+      ideology: { he: "ימין חילוני-פרגמטי. שוק חופשי, הייטק, ביטחון נחרץ, הפרדת דת ממדינה, אנטי-ביבי.", en: "Secular-pragmatic right. Free market, high-tech, decisive security, separation of religion and state, anti-Bibi." },
+      leaderBio: { he: "נפתלי בנט, ראש ממשלה לשעבר (2021-2022). יזם הייטק, לשעבר ראש מועצת יש\"ע. חזר לפוליטיקה ב-2025.", en: "Naftali Bennett, former Prime Minister (2021-2022). Tech entrepreneur, former head of the Yesha Council. Returned to politics in 2025." },
+      members: { he: ["מתן כהנא (עבר לישר!)", "איילת שקד"], en: ["Matan Kahana (moved to Yashar!)", "Ayelet Shaked"] },
+      pro: { he: "ניסיון בראשות ממשלה, רקע עסקי, פרגמטי ולא אידיאולוגי קיצוני.", en: "Prime Ministerial experience, business background, pragmatic and not extremely ideological." },
+      con: { he: "שבר הבטחה לא לשבת עם לפיד, מפלגה חדשה ללא מסד בוחרים מוכח.", en: "Broke promise not to sit with Lapid, new party with no proven voter base." }
     }},
-  { name: "!ישר", leader: "גדי אייזנקוט", econ: 5, auth: 4, relig: 3, def: 5, ident: 8, camp: 1, color: "#00796B", threshold: false,
+  { name: { he: "!ישר", en: "Yashar!" }, leader: { he: "גדי אייזנקוט", en: "Gadi Eisenkot" }, econ: 5, auth: 4, relig: 3, def: 5, ident: 8, camp: 1, color: "#00796B", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/Gadi_Eisenkot_1.jpg/200px-Gadi_Eisenkot_1.jpg",
     info: {
-      ideology: "מרכז-מדיני. ביטחון אחראי, שלטון חוק, גיוס שוויוני, כלכלה מאוזנת.",
-      leaderBio: "גדי אייזנקוט, רמטכ\"ל לשעבר (2015-2019). פיתח את \"דוקטרינת אייזנקוט\" של מידתיות. איבד את בנו גל ב-7.10.",
-      members: ["מתן כהנא", "טל רוסו", "שיר סיגל"],
-      pro: "ניסיון ביטחוני עצום, מנהיגות רגועה ומחושבת, אמינות אישית גבוהה.",
-      con: "מפלגה חדשה, חסר ניסיון פוליטי, עדיין לא הוכיח יכולת ניהול קואליציה."
+      ideology: { he: "מרכז-מדיני. ביטחון אחראי, שלטון חוק, גיוס שוויוני, כלכלה מאוזנת.", en: "Center-statesmanlike. Responsible security, rule of law, equal conscription, balanced economy." },
+      leaderBio: { he: "גדי אייזנקוט, רמטכ\"ל לשעבר (2015-2019). פיתח את \"דוקטרינת אייזנקוט\" של מידתיות. איבד את בנו גל ב-7.10.", en: "Gadi Eisenkot, former IDF Chief of Staff (2015-2019). Developed the 'Eisenkot Doctrine' of proportionality. Lost his son Gal on Oct 7." },
+      members: { he: ["מתן כהנא", "טל רוסו", "שיר סיגל"], en: ["Matan Kahana", "Tal Russo", "Shir Siegel"] },
+      pro: { he: "ניסיון ביטחוני עצום, מנהיגות רגועה ומחושבת, אמינות אישית גבוהה.", en: "Enormous security experience, calm and measured leadership, high personal credibility." },
+      con: { he: "מפלגה חדשה, חסר ניסיון פוליטי, עדיין לא הוכיח יכולת ניהול קואליציה.", en: "New party, lacks political experience, hasn't yet proven coalition management ability." }
     }},
-  { name: "יש עתיד", leader: "יאיר לפיד", econ: 7, auth: 4, relig: 2, def: 5, ident: 8, camp: 2, color: "#EF6C00", threshold: false,
+  { name: { he: "יש עתיד", en: "Yesh Atid" }, leader: { he: "יאיר לפיד", en: "Yair Lapid" }, econ: 7, auth: 4, relig: 2, def: 5, ident: 8, camp: 2, color: "#EF6C00", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Yair_Lapid_%28D1237-011%29.jpg/200px-Yair_Lapid_%28D1237-011%29.jpg",
     info: {
-      ideology: "מרכז-ליברלי. מעמד ביניים, הפרדת דת ממדינה, שלטון חוק, דיפלומטיה פעילה.",
-      leaderBio: "יאיר לפיד, ראש ממשלה לשעבר (2022), שר חוץ ושר אוצר לשעבר. עיתונאי ומגיש טלוויזיה בעברו.",
-      members: ["מאיר כהן", "קארין אלהרר", "בועז טופורובסקי"],
-      pro: "מנהיג אופוזיציה חזק, מחויב לדמוקרטיה ושלטון חוק, ניסיון ממשלתי.",
-      con: "נתפס כאליטיסט, לא הצליח לנצח את נתניהו בבחירות, חלש בביטחון."
+      ideology: { he: "מרכז-ליברלי. מעמד ביניים, הפרדת דת ממדינה, שלטון חוק, דיפלומטיה פעילה.", en: "Center-liberal. Middle class, separation of religion and state, rule of law, active diplomacy." },
+      leaderBio: { he: "יאיר לפיד, ראש ממשלה לשעבר (2022), שר חוץ ושר אוצר לשעבר. עיתונאי ומגיש טלוויזיה בעברו.", en: "Yair Lapid, former Prime Minister (2022), former Foreign and Finance Minister. Former journalist and TV anchor." },
+      members: { he: ["מאיר כהן", "קארין אלהרר", "בועז טופורובסקי"], en: ["Meir Cohen", "Karine Elharrar", "Boaz Toporovsky"] },
+      pro: { he: "מנהיג אופוזיציה חזק, מחויב לדמוקרטיה ושלטון חוק, ניסיון ממשלתי.", en: "Strong opposition leader, committed to democracy and rule of law, government experience." },
+      con: { he: "נתפס כאליטיסט, לא הצליח לנצח את נתניהו בבחירות, חלש בביטחון.", en: "Perceived as elitist, failed to defeat Netanyahu in elections, weak on security." }
     }},
-  { name: 'ש"ס', leader: "אריה דרעי", econ: 3, auth: 7, relig: 9, def: 5, ident: 5, camp: 8, color: "#5D4037", threshold: false,
+  { name: { he: 'ש"ס', en: "Shas" }, leader: { he: "אריה דרעי", en: "Aryeh Deri" }, econ: 3, auth: 7, relig: 9, def: 5, ident: 5, camp: 8, color: "#5D4037", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/%D7%90%D7%A8%D7%99%D7%94_%D7%93%D7%A8%D7%A2%D7%99_2.jpg/200px-%D7%90%D7%A8%D7%99%D7%94_%D7%93%D7%A8%D7%A2%D7%99_2.jpg",
     info: {
-      ideology: "דתית-חברתית ספרדית. שמירה על מסורת, רווחה כלכלית לפריפריה, זהות ספרדית.",
-      leaderBio: "אריה דרעי, מנהיג ש\"ס מ-1984. שר פנים ובריאות לשעבר. ריצה עונש מאסר על שוחד. הודח מתפקיד שר ע\"י בג\"ץ.",
-      members: ["יצחק כהן", "משה ארבל", "מיכאל מלכיאלי"],
-      pro: "מייצג את הפריפריה הספרדית, רשת חברתית וחינוכית ענקית (אל המעיין).",
-      con: "הרשעה פלילית, שליטה אישית מוחלטת במפלגה, סחר פוליטי בקואליציות."
+      ideology: { he: "דתית-חברתית ספרדית. שמירה על מסורת, רווחה כלכלית לפריפריה, זהות ספרדית.", en: "Sephardic religious-social. Preserving tradition, economic welfare for the periphery, Sephardic identity." },
+      leaderBio: { he: "אריה דרעי, מנהיג ש\"ס מ-1984. שר פנים ובריאות לשעבר. ריצה עונש מאסר על שוחד. הודח מתפקיד שר ע\"י בג\"ץ.", en: "Aryeh Deri, Shas leader since 1984. Former Interior and Health Minister. Served prison time for bribery. Removed from minister position by the Supreme Court." },
+      members: { he: ["יצחק כהן", "משה ארבל", "מיכאל מלכיאלי"], en: ["Yitzhak Cohen", "Moshe Arbel", "Michael Malkieli"] },
+      pro: { he: "מייצג את הפריפריה הספרדית, רשת חברתית וחינוכית ענקית (אל המעיין).", en: "Represents the Sephardic periphery, huge social and educational network (El HaMaayan)." },
+      con: { he: "הרשעה פלילית, שליטה אישית מוחלטת במפלגה, סחר פוליטי בקואליציות.", en: "Criminal conviction, total personal control of the party, political trading in coalitions." }
     }},
-  { name: "יהדות התורה", leader: "יצחק גולדקנופף", econ: 2, auth: 8, relig: 10, def: 5, ident: 3, camp: 8, color: "#455A64", threshold: false,
+  { name: { he: "יהדות התורה", en: "United Torah Judaism" }, leader: { he: "יצחק גולדקנופף", en: "Yitzchak Goldknopf" }, econ: 2, auth: 8, relig: 10, def: 5, ident: 3, camp: 8, color: "#455A64", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Yitzchak_Goldknopf_1.jpg/200px-Yitzchak_Goldknopf_1.jpg",
     info: {
-      ideology: "חרדית-אשכנזית. שמירה על עולם הישיבות, פטור מגיוס, תקציבים למוסדות תורניים.",
-      leaderBio: "יצחק גולדקנופף, שר השיכון. מנהיג חסידי מטעם אגודת ישראל. נכנס לפוליטיקה ב-2022.",
-      members: ["משה גפני", "מאיר פרוש", "יעקב אשר"],
-      pro: "ייצוג עקבי של הציבור החרדי, שימור מסורת ולימוד תורה.",
-      con: "התנגדות עקבית לגיוס, חוסר לימודי ליבה, תלות בתקציבי מדינה."
+      ideology: { he: "חרדית-אשכנזית. שמירה על עולם הישיבות, פטור מגיוס, תקציבים למוסדות תורניים.", en: "Ashkenazi Haredi. Preserving the yeshiva world, draft exemption, budgets for Torah institutions." },
+      leaderBio: { he: "יצחק גולדקנופף, שר השיכון. מנהיג חסידי מטעם אגודת ישראל. נכנס לפוליטיקה ב-2022.", en: "Yitzchak Goldknopf, Housing Minister. Hasidic leader from Agudat Yisrael. Entered politics in 2022." },
+      members: { he: ["משה גפני", "מאיר פרוש", "יעקב אשר"], en: ["Moshe Gafni", "Meir Porush", "Yaakov Asher"] },
+      pro: { he: "ייצוג עקבי של הציבור החרדי, שימור מסורת ולימוד תורה.", en: "Consistent representation of the Haredi public, preservation of tradition and Torah study." },
+      con: { he: "התנגדות עקבית לגיוס, חוסר לימודי ליבה, תלות בתקציבי מדינה.", en: "Consistent opposition to conscription, lack of core studies, dependence on state budgets." }
     }},
-  { name: "עוצמה יהודית", leader: "איתמר בן גביר", econ: 6, auth: 9, relig: 7, def: 10, ident: 10, camp: 9, color: "#C62828", threshold: false,
+  { name: { he: "עוצמה יהודית", en: "Otzma Yehudit" }, leader: { he: "איתמר בן גביר", en: "Itamar Ben Gvir" }, econ: 6, auth: 9, relig: 7, def: 10, ident: 10, camp: 9, color: "#C62828", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Itamar_Ben_Gvir_3_%28cropped%29.jpg/200px-Itamar_Ben_Gvir_3_%28cropped%29.jpg",
     info: {
-      ideology: "ימין קיצוני לאומני. ריבונות מלאה, כוח נגד טרור, אכיפה קשוחה, ערכים יהודיים.",
-      leaderBio: "איתמר בן גביר, שר הביטחון הלאומי. עורך דין לשעבר של פעילי ימין. הורשע בעבר בתמיכה בטרור ובגזענות.",
-      members: ["יצחק וסרלאוף", "עמיחי אליהו", "לימור סון הר-מלך"],
-      pro: "אותנטי, מחובר לבסיס שלו, מוביל שינוי באכיפה.",
-      con: "הרשעות פליליות בעבר, עליה להר הבית מעוררת מתחים, שיח מסית."
+      ideology: { he: "ימין קיצוני לאומני. ריבונות מלאה, כוח נגד טרור, אכיפה קשוחה, ערכים יהודיים.", en: "Far-right nationalist. Full sovereignty, force against terror, tough law enforcement, Jewish values." },
+      leaderBio: { he: "איתמר בן גביר, שר הביטחון הלאומי. עורך דין לשעבר של פעילי ימין. הורשע בעבר בתמיכה בטרור ובגזענות.", en: "Itamar Ben Gvir, National Security Minister. Former lawyer for right-wing activists. Previously convicted of supporting terrorism and racism." },
+      members: { he: ["יצחק וסרלאוף", "עמיחי אליהו", "לימור סון הר-מלך"], en: ["Yitzhak Wasserlauf", "Amichai Eliyahu", "Limor Son Har-Melech"] },
+      pro: { he: "אותנטי, מחובר לבסיס שלו, מוביל שינוי באכיפה.", en: "Authentic, connected to his base, leading change in law enforcement." },
+      con: { he: "הרשעות פליליות בעבר, עליה להר הבית מעוררת מתחים, שיח מסית.", en: "Past criminal convictions, Temple Mount visits stir tensions, inciting rhetoric." }
     }},
-  { name: "ישראל ביתנו", leader: "אביגדור ליברמן", econ: 8, auth: 6, relig: 1, def: 9, ident: 9, camp: 1, color: "#283593", threshold: false,
+  { name: { he: "ישראל ביתנו", en: "Yisrael Beiteinu" }, leader: { he: "אביגדור ליברמן", en: "Avigdor Lieberman" }, econ: 8, auth: 6, relig: 1, def: 9, ident: 9, camp: 1, color: "#283593", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/Avigdor_Lieberman_2017.jpg/200px-Avigdor_Lieberman_2017.jpg",
     info: {
-      ideology: "ימין חילוני קשוח. שוק חופשי, אנטי-חרדי, ביטחון נחרץ, גיוס שוויוני.",
-      leaderBio: "אביגדור ליברמן, שר אוצר, חוץ וביטחון לשעבר. עלה מברית המועצות. חבר כנסת מ-1999.",
-      members: ["עודד פורר", "אלי אביגדור", "שרון רואטבי"],
-      pro: "עקבי בעמדות, מנוסה בתפקידים בכירים, לוחם נגד פטור חרדים.",
-      con: "סגנון מפלג, האשמות שחיתות (זוכה), מפלגה קטנה עם תלות באיש אחד."
+      ideology: { he: "ימין חילוני קשוח. שוק חופשי, אנטי-חרדי, ביטחון נחרץ, גיוס שוויוני.", en: "Secular tough-right. Free market, anti-Haredi, decisive security, equal conscription." },
+      leaderBio: { he: "אביגדור ליברמן, שר אוצר, חוץ וביטחון לשעבר. עלה מברית המועצות. חבר כנסת מ-1999.", en: "Avigdor Lieberman, former Finance, Foreign and Defense Minister. Immigrated from the Soviet Union. Knesset member since 1999." },
+      members: { he: ["עודד פורר", "אלי אביגדור", "שרון רואטבי"], en: ["Oded Forer", "Eli Avidar", "Sharon Roffe-Ofir"] },
+      pro: { he: "עקבי בעמדות, מנוסה בתפקידים בכירים, לוחם נגד פטור חרדים.", en: "Consistent positions, experienced in senior roles, fights against Haredi exemption." },
+      con: { he: "סגנון מפלג, האשמות שחיתות (זוכה), מפלגה קטנה עם תלות באיש אחד.", en: "Divisive style, corruption accusations (acquitted), small party dependent on one man." }
     }},
-  { name: "הדמוקרטים", leader: "יאיר גולן", econ: 3, auth: 2, relig: 1, def: 3, ident: 6, camp: 1, color: "#AD1457", threshold: false,
+  { name: { he: "הדמוקרטים", en: "The Democrats" }, leader: { he: "יאיר גולן", en: "Yair Golan" }, econ: 3, auth: 2, relig: 1, def: 3, ident: 6, camp: 1, color: "#AD1457", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Yair_Golan_%28SHL_9404%29.jpg/200px-Yair_Golan_%28SHL_9404%29.jpg",
     info: {
-      ideology: "שמאל סוציאל-דמוקרטי. שוויון, זכויות אדם, שלום, הפרדת דת ממדינה, צדק חברתי.",
-      leaderBio: "יאיר גולן, אלוף (מיל') ומפקד פיקוד צפון לשעבר. הוביל את מחאת 2023 והפך למנהיג הדמוקרטים (מיזוג עבודה-מרצ).",
-      members: ["נעמה לזימי", "גלעד קריב", "יאיר פינק"],
-      pro: "רקע צבאי חזק, אותנטי, מגשר בין שמאל ביטחוני לחברתי.",
-      con: "מפלגה חדשה ומגוונת מדי, עמדות ביטחוניות רכות, קהל מצומצם."
+      ideology: { he: "שמאל סוציאל-דמוקרטי. שוויון, זכויות אדם, שלום, הפרדת דת ממדינה, צדק חברתי.", en: "Social-democratic left. Equality, human rights, peace, separation of religion and state, social justice." },
+      leaderBio: { he: "יאיר גולן, אלוף (מיל') ומפקד פיקוד צפון לשעבר. הוביל את מחאת 2023 והפך למנהיג הדמוקרטים (מיזוג עבודה-מרצ).", en: "Yair Golan, Major General (res.) and former Northern Command head. Led the 2023 protest and became leader of The Democrats (merger of Labor-Meretz)." },
+      members: { he: ["נעמה לזימי", "גלעד קריב", "יאיר פינק"], en: ["Naama Lazimi", "Gilad Kariv", "Yair Fink"] },
+      pro: { he: "רקע צבאי חזק, אותנטי, מגשר בין שמאל ביטחוני לחברתי.", en: "Strong military background, authentic, bridges security and social left." },
+      con: { he: "מפלגה חדשה ומגוונת מדי, עמדות ביטחוניות רכות, קהל מצומצם.", en: "New and overly diverse party, soft security positions, limited audience." }
     }},
-  { name: 'רע"ם', leader: "מנסור עבאס", econ: 3, auth: 5, relig: 7, def: 2, ident: 2, camp: 4, color: "#00897B", threshold: false,
+  { name: { he: 'רע"ם', en: "Ra'am" }, leader: { he: "מנסור עבאס", en: "Mansour Abbas" }, econ: 3, auth: 5, relig: 7, def: 2, ident: 2, camp: 4, color: "#00897B", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Mansour_Abbas%2C_April_3_2023_%28cropped%29.jpg/200px-Mansour_Abbas%2C_April_3_2023_%28cropped%29.jpg",
     info: {
-      ideology: "ערבית-איסלאמית פרגמטית. שיפור חיי ערביי ישראל, שיתוף פעולה עם כל ממשלה.",
-      leaderBio: "מנסור עבאס, רופא שיניים ומנהיג התנועה האיסלאמית הדרומית. היה חלק מקואליציית בנט-לפיד - פריצת דרך היסטורית.",
-      members: ["וואליד טאהא", "אימאן חטיב-יאסין"],
-      pro: "פרגמטי, שבר טאבו של שותפות ערבית בקואליציה, מביא תקציבים למגזר.",
-      con: "מייצג תנועה איסלאמית, שיתף פעולה עם נתניהו, נתפס כבוגד ע\"י חלק מהמגזר."
+      ideology: { he: "ערבית-איסלאמית פרגמטית. שיפור חיי ערביי ישראל, שיתוף פעולה עם כל ממשלה.", en: "Pragmatic Arab-Islamist. Improving the lives of Arab Israelis, cooperation with any government." },
+      leaderBio: { he: "מנסור עבאס, רופא שיניים ומנהיג התנועה האיסלאמית הדרומית. היה חלק מקואליציית בנט-לפיד - פריצת דרך היסטורית.", en: "Mansour Abbas, dentist and leader of the Southern Islamic Movement. Was part of the Bennett-Lapid coalition — a historic breakthrough." },
+      members: { he: ["וואליד טאהא", "אימאן חטיב-יאסין"], en: ["Walid Taha", "Iman Khatib-Yasin"] },
+      pro: { he: "פרגמטי, שבר טאבו של שותפות ערבית בקואליציה, מביא תקציבים למגזר.", en: "Pragmatic, broke the taboo of Arab coalition partnership, brings budgets to the sector." },
+      con: { he: "מייצג תנועה איסלאמית, שיתף פעולה עם נתניהו, נתפס כבוגד ע\"י חלק מהמגזר.", en: "Represents an Islamist movement, cooperated with Netanyahu, seen as a traitor by part of the sector." }
     }},
-  { name: 'חד"ש-תע"ל', leader: "איימן עודה", econ: 1, auth: 3, relig: 2, def: 1, ident: 1, camp: 1, color: "#B71C1C", threshold: false,
+  { name: { he: 'חד"ש-תע"ל', en: "Hadash-Ta'al" }, leader: { he: "איימן עודה", en: "Ayman Odeh" }, econ: 1, auth: 3, relig: 2, def: 1, ident: 1, camp: 1, color: "#B71C1C", threshold: false,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Ayman_Odeh_2021.png/200px-Ayman_Odeh_2021.png",
     info: {
-      ideology: "ערבית-יהודית שמאלנית. קומוניזם, שוויון לאומי, מדינה דו-לאומית, צדק חברתי.",
-      leaderBio: "איימן עודה, מנהיג חד\"ש. עורך דין ופעיל חברתי מחיפה. מוביל שיתוף ערבי-יהודי.",
-      members: ["אחמד טיבי", "עאידה תומא-סלימאן", "עופר כסיף"],
-      pro: "מפלגה ערבית-יהודית ייחודית, עקבית אידיאולוגית, קול חזק למיעוט.",
-      con: "עמדות קיצוניות על הסכסוך, קהל מצומצם, לא רלוונטית לקואליציה."
+      ideology: { he: "ערבית-יהודית שמאלנית. קומוניזם, שוויון לאומי, מדינה דו-לאומית, צדק חברתי.", en: "Arab-Jewish leftist. Communism, national equality, binational state, social justice." },
+      leaderBio: { he: "איימן עודה, מנהיג חד\"ש. עורך דין ופעיל חברתי מחיפה. מוביל שיתוף ערבי-יהודי.", en: "Ayman Odeh, leader of Hadash. Lawyer and social activist from Haifa. Leads Arab-Jewish cooperation." },
+      members: { he: ["אחמד טיבי", "עאידה תומא-סלימאן", "עופר כסיף"], en: ["Ahmad Tibi", "Aida Touma-Sliman", "Ofer Cassif"] },
+      pro: { he: "מפלגה ערבית-יהודית ייחודית, עקבית אידיאולוגית, קול חזק למיעוט.", en: "Unique Arab-Jewish party, ideologically consistent, strong voice for the minority." },
+      con: { he: "עמדות קיצוניות על הסכסוך, קהל מצומצם, לא רלוונטית לקואליציה.", en: "Extreme positions on the conflict, limited audience, irrelevant to coalition politics." }
     }},
-  { name: "הציונות הדתית", leader: "בצלאל סמוטריץ'", econ: 7, auth: 8, relig: 9, def: 10, ident: 10, camp: 9, color: "#E65100", threshold: true,
+  { name: { he: "הציונות הדתית", en: "Religious Zionism" }, leader: { he: "בצלאל סמוטריץ'", en: "Bezalel Smotrich" }, econ: 7, auth: 8, relig: 9, def: 10, ident: 10, camp: 9, color: "#E65100", threshold: true,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Bezalel_Smotrich.jpg/200px-Bezalel_Smotrich.jpg",
     info: {
-      ideology: "ימין דתי-לאומי. ריבונות על כל ארץ ישראל, ערכי תורה במדינה, התיישבות.",
-      leaderBio: "בצלאל סמוטריץ', שר האוצר. עורך דין ופעיל התיישבות. הוביל מחאה נגד הנסיגה מעזה.",
-      members: ["אופיר סופר", "שמחה רוטמן", "אוהד טל"],
-      pro: "אידיאולוגי ועקבי, קידם תשתיות ביהודה ושומרון.",
-      con: "עמדות קיצוניות, קרוב לאחוז החסימה בסקרים, אמירות מסיתות."
+      ideology: { he: "ימין דתי-לאומי. ריבונות על כל ארץ ישראל, ערכי תורה במדינה, התיישבות.", en: "National-religious right. Sovereignty over all the Land of Israel, Torah values in the state, settlement." },
+      leaderBio: { he: "בצלאל סמוטריץ', שר האוצר. עורך דין ופעיל התיישבות. הוביל מחאה נגד הנסיגה מעזה.", en: "Bezalel Smotrich, Finance Minister. Lawyer and settlement activist. Led the protest against the Gaza disengagement." },
+      members: { he: ["אופיר סופר", "שמחה רוטמן", "אוהד טל"], en: ["Ofir Sofer", "Simcha Rothman", "Ohad Tal"] },
+      pro: { he: "אידיאולוגי ועקבי, קידם תשתיות ביהודה ושומרון.", en: "Ideological and consistent, advanced infrastructure in Judea and Samaria." },
+      con: { he: "עמדות קיצוניות, קרוב לאחוז החסימה בסקרים, אמירות מסיתות.", en: "Extreme positions, near electoral threshold in polls, inciting statements." }
     }},
-  { name: "כחול לבן", leader: "בני גנץ", econ: 6, auth: 5, relig: 3, def: 7, ident: 8, camp: 2, color: "#1976D2", threshold: true,
+  { name: { he: "כחול לבן", en: "Blue and White" }, leader: { he: "בני גנץ", en: "Benny Gantz" }, econ: 6, auth: 5, relig: 3, def: 7, ident: 8, camp: 2, color: "#1976D2", threshold: true,
     img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Israeli_Minister_Benny_Gantz_at_the_Department_of_State_in_Washington%2C_D.C._on_March_5%2C_2024_%28cropped%29.jpg/200px-Israeli_Minister_Benny_Gantz_at_the_Department_of_State_in_Washington%2C_D.C._on_March_5%2C_2024_%28cropped%29.jpg",
     info: {
-      ideology: "מרכז-ביטחוני. ביטחון אחראי, ממלכתיות, שלטון חוק, אחדות לאומית.",
-      leaderBio: "בני גנץ, רמטכ\"ל לשעבר (2011-2015), שר ביטחון ומשלח לקבינט המלחמה. עזב את קבינט החירום ב-2024.",
-      members: ["חילי טרופר", "פנינה תמנו-שטה"],
-      pro: "מנהיג ביטחוני מנוסה, רגוע ומאופק, מבקש אחדות.",
-      con: "קרוב לאחוז החסימה, נתפס כחלש פוליטית, שבר הבטחה לגבי ישיבה עם ביבי."
+      ideology: { he: "מרכז-ביטחוני. ביטחון אחראי, ממלכתיות, שלטון חוק, אחדות לאומית.", en: "Center-security. Responsible security, statesmanship, rule of law, national unity." },
+      leaderBio: { he: "בני גנץ, רמטכ\"ל לשעבר (2011-2015), שר ביטחון ומשלח לקבינט המלחמה. עזב את קבינט החירום ב-2024.", en: "Benny Gantz, former IDF Chief of Staff (2011-2015), former Defense Minister and member of the war cabinet. Left the emergency cabinet in 2024." },
+      members: { he: ["חילי טרופר", "פנינה תמנו-שטה"], en: ["Hili Tropper", "Pnina Tamano-Shata"] },
+      pro: { he: "מנהיג ביטחוני מנוסה, רגוע ומאופק, מבקש אחדות.", en: "Experienced security leader, calm and restrained, seeks unity." },
+      con: { he: "קרוב לאחוז החסימה, נתפס כחלש פוליטית, שבר הבטחה לגבי ישיבה עם ביבי.", en: "Near electoral threshold, perceived as politically weak, broke promise about sitting with Bibi." }
     }},
 ];
 
 // ===== INFLUENCERS & POLITICAL FIGURES =====
 const influencers = [
-  { name: "יונתן שלו", role: "פעיל מילואים / משפיען", desc: "מייסד תנועת 'כתף אל כתף' למאבק בשוויון הנטל. לוחם מגלן, נכד שגרירת ישראל באו\"ם.",
-    econ: 5, auth: 3, relig: 1, def: 6,
-    img: "" },
-  { name: "מתן יפה", role: "פעיל ציוני / משפיען", desc: "רב\"ט מילואים, מייסד תנועת 'אל הדגל' הציונית שמבקשת לחצות את המחנאות ימין-שמאל.",
-    econ: 5, auth: 6, relig: 4, def: 8,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/%D7%9E%D7%AA%D7%9F_%D7%99%D7%A4%D7%94.jpeg/200px-%D7%9E%D7%AA%D7%9F_%D7%99%D7%A4%D7%94.jpeg" },
-  { name: "עמית סגל", role: "פרשן פוליטי / עיתונאי", desc: "פרשן פוליטי ראשי בערוץ 12 וישראל היום. מזוהה עם הימין אך נחשב מקצועי.",
-    econ: 7, auth: 6, relig: 5, def: 7,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Amit_Segal_D817-028_%28cropped%29.jpg/200px-Amit_Segal_D817-028_%28cropped%29.jpg" },
-  { name: "ינון מגל", role: "מגיש טלוויזיה / ערוץ 14", desc: "מגיש ערוץ 14 וחבר כנסת לשעבר. קול ימני פופוליסטי עם רטוריקה חריפה.",
-    econ: 7, auth: 8, relig: 7, def: 9,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Yinon_Magal.jpg/200px-Yinon_Magal.jpg" },
-  { name: "אמנון אברמוביץ'", role: "פרשן פוליטי / עיתונאי", desc: "פרשן ותיק בערוץ 12. עמוד תווך של העיתונות המרכז-שמאלית בישראל.",
-    econ: 3, auth: 3, relig: 2, def: 4,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Amnon_Abramovich_%28cropped%29.jpg/200px-Amnon_Abramovich_%28cropped%29.jpg" },
-  { name: "משה גפני", role: 'ח"כ / יהדות התורה', desc: "חבר הכנסת הוותיק ביותר (מ-1988). יו\"ר ועדת הכספים. מגן על פטור חרדים מגיוס.",
-    econ: 4, auth: 7, relig: 10, def: 4,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Moshe_Gafni.jpg/200px-Moshe_Gafni.jpg" },
-  { name: "מירי רגב", role: "שרת התחבורה / ליכוד", desc: "דובר צה\"ל לשעבר. פוליטיקאית פופוליסטית עם סגנון חריף. שרת תרבות ותחבורה.",
-    econ: 7, auth: 8, relig: 6, def: 8,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Miri_Regev_2021.jpg/200px-Miri_Regev_2021.jpg" },
-  { name: "אחמד טיבי", role: 'ח"כ / תע"ל', desc: "חבר הכנסת הערבי הוותיק ביותר. רופא, ידוע בנאומים חריפים ובמאבק למען האזרחים הערבים.",
-    econ: 2, auth: 2, relig: 3, def: 1,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Ahmad_Tibi_2.jpg/200px-Ahmad_Tibi_2.jpg" },
-  { name: "שמחה רוטמן", role: 'ח"כ / הציונות הדתית', desc: "יו\"ר ועדת החוקה. אדריכל המהפכה המשפטית של 2023. דמות מרכזית בויכוח הרפורמה.",
-    econ: 8, auth: 9, relig: 8, def: 8,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Simcha_Rothman.jpg/200px-Simcha_Rothman.jpg" },
-  { name: "גלעד קריב", role: 'ח"כ / הדמוקרטים', desc: "רב רפורמי וחבר כנסת. מוביל מאבקים לחופש דת, נישואים אזרחיים וזכויות להט\"ב.",
-    econ: 3, auth: 2, relig: 1, def: 3,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Gilad_Kariv.jpg/200px-Gilad_Kariv.jpg" },
-  { name: "ניר ברקת", role: "שר הכלכלה / ליכוד", desc: "ראש עיריית ירושלים לשעבר. יזם הייטק. שר הכלכלה. מתחרה פוטנציאלי על הנהגת הליכוד.",
-    econ: 8, auth: 6, relig: 4, def: 7,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Nir_Barkat_2023.jpg/200px-Nir_Barkat_2023.jpg" },
-  { name: "ישראל כץ", role: "שר החוץ / ליכוד", desc: "שר חוץ, ביטחון ותחבורה לשעבר. פוליטיקאי ותיק בליכוד עם ניסיון ממשלתי נרחב.",
-    econ: 7, auth: 7, relig: 5, def: 8,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Israel_Katz_2023.jpg/200px-Israel_Katz_2023.jpg" },
-  { name: "מתן כהנא", role: "!ישר / ח\"כ לשעבר", desc: "רב וחבר כנסת לשעבר. שר לשירותי דת בממשלת בנט. דתי-ליברלי שעבר מימינה לישר!.",
-    econ: 5, auth: 4, relig: 4, def: 6,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Matan_Kahana.jpg/200px-Matan_Kahana.jpg" },
-  { name: "עמיחי אליהו", role: "שר מורשת / עוצמה יהודית", desc: "שר המורשת. עורר סערה כשאמר שהטלת פצצה גרעינית על עזה היא \"אפשרות\". ימין קיצוני.",
-    econ: 6, auth: 9, relig: 8, def: 10,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Amichai_Eliyahu.jpg/200px-Amichai_Eliyahu.jpg" },
-  { name: "פנינה תמנו-שטה", role: "כחול לבן / ח\"כ", desc: "חברת כנסת ממוצא אתיופי. שרת עלייה וקליטה לשעבר. פעילה למען שוויון עדתי.",
-    econ: 5, auth: 4, relig: 3, def: 6,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Pnina_Tamano-Shata_2021.jpg/200px-Pnina_Tamano-Shata_2021.jpg" },
-  { name: "ירון זליכה", role: "כלכלן / פעיל ציבורי", desc: "חשב כללי לשעבר ומוביל המחאה החברתית של 2011. קול ביקורתי על מדיניות כלכלית ימנית.",
-    econ: 2, auth: 3, relig: 2, def: 4,
-    img: "https://upload.wikimedia.org/wikipedia/commons/9/92/Yaron_zalicha.jpg" },
-  { name: "ירון דקל", role: "פעיל מחאה / אחי חטוף", desc: "אחיו של חטוף שנרצח ב-7.10. הפך לפעיל מרכזי במחאת המשפחות מול הממשלה.",
-    econ: 4, auth: 3, relig: 2, def: 5,
-    img: "" },
-  { name: "שיר סיגל", role: "!ישר / פעילה", desc: "בתו של קית' סיגל, חטוף מעזה. הצטרפה למפלגת ישר! של אייזנקוט. קול משפחות החטופים.",
-    econ: 4, auth: 3, relig: 2, def: 6,
-    img: "" },
-  { name: "אופיר סופר", role: "שר / הציונות הדתית", desc: "שר ההגנה על הסביבה. מתנחל מקדש התורה. ימין דתי-לאומי קלאסי.",
-    econ: 7, auth: 7, relig: 9, def: 10,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Ofir_Sofer.jpg/200px-Ofir_Sofer.jpg" },
-  { name: "נעמה לזימי", role: "הדמוקרטים / פעילה", desc: "מנהיגת מחאת הדגלים השחורים נגד נתניהו. הצטרפה למפלגת הדמוקרטים של יאיר גולן.",
-    econ: 3, auth: 2, relig: 1, def: 3,
-    img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Naama_lazimi.jpg/200px-Naama_lazimi.jpg" },
+  { name: { he: "יונתן שלו", en: "Yonatan Shalev" }, role: { he: "פעיל מילואים / משפיען", en: "Reservist Activist / Influencer" }, desc: { he: "מייסד תנועת 'כתף אל כתף' למאבק בשוויון הנטל. לוחם מגלן, נכד שגרירת ישראל באו\"ם.", en: "Founder of 'Shoulder to Shoulder' movement for equal conscription burden. Maglan commando, grandson of Israel's UN ambassador." },
+    econ: 5, auth: 3, relig: 1, def: 6, img: "" },
+  { name: { he: "מתן יפה", en: "Matan Yaffe" }, role: { he: "פעיל ציוני / משפיען", en: "Zionist Activist / Influencer" }, desc: { he: "רב\"ט מילואים, מייסד תנועת 'אל הדגל' הציונית שמבקשת לחצות את המחנאות ימין-שמאל.", en: "Reserve corporal, founder of the Zionist 'To the Flag' movement seeking to transcend the right-left divide." },
+    econ: 5, auth: 6, relig: 4, def: 8, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/%D7%9E%D7%AA%D7%9F_%D7%99%D7%A4%D7%94.jpeg/200px-%D7%9E%D7%AA%D7%9F_%D7%99%D7%A4%D7%94.jpeg" },
+  { name: { he: "עמית סגל", en: "Amit Segal" }, role: { he: "פרשן פוליטי / עיתונאי", en: "Political Commentator / Journalist" }, desc: { he: "פרשן פוליטי ראשי בערוץ 12 וישראל היום. מזוהה עם הימין אך נחשב מקצועי.", en: "Chief political commentator at Channel 12 and Israel Hayom. Identified with the right but considered professional." },
+    econ: 7, auth: 6, relig: 5, def: 7, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Amit_Segal_D817-028_%28cropped%29.jpg/200px-Amit_Segal_D817-028_%28cropped%29.jpg" },
+  { name: { he: "ינון מגל", en: "Yinon Magal" }, role: { he: "מגיש טלוויזיה / ערוץ 14", en: "TV Anchor / Channel 14" }, desc: { he: "מגיש ערוץ 14 וחבר כנסת לשעבר. קול ימני פופוליסטי עם רטוריקה חריפה.", en: "Channel 14 anchor and former MK. Populist right-wing voice with sharp rhetoric." },
+    econ: 7, auth: 8, relig: 7, def: 9, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Yinon_Magal.jpg/200px-Yinon_Magal.jpg" },
+  { name: { he: "אמנון אברמוביץ'", en: "Amnon Abramovich" }, role: { he: "פרשן פוליטי / עיתונאי", en: "Political Commentator / Journalist" }, desc: { he: "פרשן ותיק בערוץ 12. עמוד תווך של העיתונות המרכז-שמאלית בישראל.", en: "Veteran Channel 12 commentator. A pillar of center-left journalism in Israel." },
+    econ: 3, auth: 3, relig: 2, def: 4, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Amnon_Abramovich_%28cropped%29.jpg/200px-Amnon_Abramovich_%28cropped%29.jpg" },
+  { name: { he: "משה גפני", en: "Moshe Gafni" }, role: { he: 'ח"כ / יהדות התורה', en: "MK / United Torah Judaism" }, desc: { he: "חבר הכנסת הוותיק ביותר (מ-1988). יו\"ר ועדת הכספים. מגן על פטור חרדים מגיוס.", en: "Longest-serving MK (since 1988). Finance Committee chair. Defends Haredi draft exemption." },
+    econ: 4, auth: 7, relig: 10, def: 4, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Moshe_Gafni.jpg/200px-Moshe_Gafni.jpg" },
+  { name: { he: "מירי רגב", en: "Miri Regev" }, role: { he: "שרת התחבורה / ליכוד", en: "Transport Minister / Likud" }, desc: { he: "דובר צה\"ל לשעבר. פוליטיקאית פופוליסטית עם סגנון חריף. שרת תרבות ותחבורה.", en: "Former IDF spokesperson. Populist politician with sharp style. Former Culture and Transport Minister." },
+    econ: 7, auth: 8, relig: 6, def: 8, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Miri_Regev_2021.jpg/200px-Miri_Regev_2021.jpg" },
+  { name: { he: "אחמד טיבי", en: "Ahmad Tibi" }, role: { he: 'ח"כ / תע"ל', en: "MK / Ta'al" }, desc: { he: "חבר הכנסת הערבי הוותיק ביותר. רופא, ידוע בנאומים חריפים ובמאבק למען האזרחים הערבים.", en: "Longest-serving Arab MK. Doctor, known for sharp speeches and advocacy for Arab citizens." },
+    econ: 2, auth: 2, relig: 3, def: 1, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Ahmad_Tibi_2.jpg/200px-Ahmad_Tibi_2.jpg" },
+  { name: { he: "שמחה רוטמן", en: "Simcha Rothman" }, role: { he: 'ח"כ / הציונות הדתית', en: "MK / Religious Zionism" }, desc: { he: "יו\"ר ועדת החוקה. אדריכל המהפכה המשפטית של 2023. דמות מרכזית בויכוח הרפורמה.", en: "Constitution Committee chair. Architect of the 2023 judicial overhaul. Central figure in the reform debate." },
+    econ: 8, auth: 9, relig: 8, def: 8, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Simcha_Rothman.jpg/200px-Simcha_Rothman.jpg" },
+  { name: { he: "גלעד קריב", en: "Gilad Kariv" }, role: { he: 'ח"כ / הדמוקרטים', en: "MK / The Democrats" }, desc: { he: "רב רפורמי וחבר כנסת. מוביל מאבקים לחופש דת, נישואים אזרחיים וזכויות להט\"ב.", en: "Reform rabbi and MK. Leads struggles for freedom of religion, civil marriage, and LGBTQ+ rights." },
+    econ: 3, auth: 2, relig: 1, def: 3, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Gilad_Kariv.jpg/200px-Gilad_Kariv.jpg" },
+  { name: { he: "ניר ברקת", en: "Nir Barkat" }, role: { he: "שר הכלכלה / ליכוד", en: "Economy Minister / Likud" }, desc: { he: "ראש עיריית ירושלים לשעבר. יזם הייטק. שר הכלכלה. מתחרה פוטנציאלי על הנהגת הליכוד.", en: "Former Jerusalem mayor. Tech entrepreneur. Economy Minister. Potential Likud leadership contender." },
+    econ: 8, auth: 6, relig: 4, def: 7, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Nir_Barkat_2023.jpg/200px-Nir_Barkat_2023.jpg" },
+  { name: { he: "ישראל כץ", en: "Israel Katz" }, role: { he: "שר החוץ / ליכוד", en: "Foreign Minister / Likud" }, desc: { he: "שר חוץ, ביטחון ותחבורה לשעבר. פוליטיקאי ותיק בליכוד עם ניסיון ממשלתי נרחב.", en: "Former Foreign, Defense, and Transport Minister. Veteran Likud politician with extensive government experience." },
+    econ: 7, auth: 7, relig: 5, def: 8, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Israel_Katz_2023.jpg/200px-Israel_Katz_2023.jpg" },
+  { name: { he: "מתן כהנא", en: "Matan Kahana" }, role: { he: "!ישר / ח\"כ לשעבר", en: "Yashar! / Former MK" }, desc: { he: "רב וחבר כנסת לשעבר. שר לשירותי דת בממשלת בנט. דתי-ליברלי שעבר מימינה לישר!.", en: "Rabbi and former MK. Religious Services Minister in Bennett's government. Religious-liberal who moved from Yamina to Yashar!" },
+    econ: 5, auth: 4, relig: 4, def: 6, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Matan_Kahana.jpg/200px-Matan_Kahana.jpg" },
+  { name: { he: "עמיחי אליהו", en: "Amichai Eliyahu" }, role: { he: "שר מורשת / עוצמה יהודית", en: "Heritage Minister / Otzma Yehudit" }, desc: { he: "שר המורשת. עורר סערה כשאמר שהטלת פצצה גרעינית על עזה היא \"אפשרות\". ימין קיצוני.", en: "Heritage Minister. Caused controversy by calling a nuclear bomb on Gaza 'an option'. Far-right." },
+    econ: 6, auth: 9, relig: 8, def: 10, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Amichai_Eliyahu.jpg/200px-Amichai_Eliyahu.jpg" },
+  { name: { he: "פנינה תמנו-שטה", en: "Pnina Tamano-Shata" }, role: { he: "כחול לבן / ח\"כ", en: "Blue and White / MK" }, desc: { he: "חברת כנסת ממוצא אתיופי. שרת עלייה וקליטה לשעבר. פעילה למען שוויון עדתי.", en: "Ethiopian-origin MK. Former Aliyah and Integration Minister. Activist for ethnic equality." },
+    econ: 5, auth: 4, relig: 3, def: 6, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Pnina_Tamano-Shata_2021.jpg/200px-Pnina_Tamano-Shata_2021.jpg" },
+  { name: { he: "ירון זליכה", en: "Yaron Zelekha" }, role: { he: "כלכלן / פעיל ציבורי", en: "Economist / Public Activist" }, desc: { he: "חשב כללי לשעבר ומוביל המחאה החברתית של 2011. קול ביקורתי על מדיניות כלכלית ימנית.", en: "Former Accountant General and leader of the 2011 social protest. Critical voice on right-wing economic policy." },
+    econ: 2, auth: 3, relig: 2, def: 4, img: "https://upload.wikimedia.org/wikipedia/commons/9/92/Yaron_zalicha.jpg" },
+  { name: { he: "ירון דקל", en: "Yaron Dekel" }, role: { he: "פעיל מחאה / אחי חטוף", en: "Protest Activist / Brother of Hostage" }, desc: { he: "אחיו של חטוף שנרצח ב-7.10. הפך לפעיל מרכזי במחאת המשפחות מול הממשלה.", en: "Brother of a hostage killed on Oct 7. Became a central activist in the families' protest against the government." },
+    econ: 4, auth: 3, relig: 2, def: 5, img: "" },
+  { name: { he: "שיר סיגל", en: "Shir Siegel" }, role: { he: "!ישר / פעילה", en: "Yashar! / Activist" }, desc: { he: "בתו של קית' סיגל, חטוף מעזה. הצטרפה למפלגת ישר! של אייזנקוט. קול משפחות החטופים.", en: "Daughter of Keith Siegel, Gaza hostage. Joined Eisenkot's Yashar! party. Voice of hostage families." },
+    econ: 4, auth: 3, relig: 2, def: 6, img: "" },
+  { name: { he: "אופיר סופר", en: "Ofir Sofer" }, role: { he: "שר / הציונות הדתית", en: "Minister / Religious Zionism" }, desc: { he: "שר ההגנה על הסביבה. מתנחל מקדש התורה. ימין דתי-לאומי קלאסי.", en: "Environmental Protection Minister. Settler, Torah-devoted. Classic national-religious right." },
+    econ: 7, auth: 7, relig: 9, def: 10, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Ofir_Sofer.jpg/200px-Ofir_Sofer.jpg" },
+  { name: { he: "נעמה לזימי", en: "Naama Lazimi" }, role: { he: "הדמוקרטים / פעילה", en: "The Democrats / Activist" }, desc: { he: "מנהיגת מחאת הדגלים השחורים נגד נתניהו. הצטרפה למפלגת הדמוקרטים של יאיר גולן.", en: "Leader of the Black Flags protest against Netanyahu. Joined Yair Golan's Democrats party." },
+    econ: 3, auth: 2, relig: 1, def: 3, img: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Naama_lazimi.jpg/200px-Naama_lazimi.jpg" },
 ];
 
 // ===== QUESTIONS =====
 // Each question: { text, axis, direction }
 // direction: 1 = agree means higher score, -1 = agree means lower score
 const questions = [
-  // === ECONOMY (10 questions) ===
-  { text: "המדינה צריכה להעלות את שכר המינימום באופן משמעותי, גם אם זה פוגע בעסקים קטנים.", axis: "econ", dir: -1 },
-  { text: "הפרטה של שירותים ציבוריים כמו בריאות וחינוך תשפר את איכותם.", axis: "econ", dir: 1 },
-  { text: "המדינה צריכה לספק דיור ציבורי נרחב ולהגביל את מחירי הדירות.", axis: "econ", dir: -1 },
-  { text: "מיסים גבוהים על עשירים פוגעים בצמיחה הכלכלית ומרחיקים משקיעים.", axis: "econ", dir: 1 },
-  { text: "יש להרחיב משמעותית את קצבאות הרווחה, גם במחיר של גירעון תקציבי.", axis: "econ", dir: -1 },
-  { text: "השוק החופשי הוא הדרך הטובה ביותר לפתור בעיות כלכליות.", axis: "econ", dir: 1 },
-  { text: "צריך להלאים חברות תשתית בסיסיות כמו חשמל, מים ותחבורה ציבורית.", axis: "econ", dir: -1 },
-  { text: "תחרות חופשית בין עסקים, ללא התערבות ממשלתית, מובילה לתוצאות הטובות ביותר עבור הצרכן.", axis: "econ", dir: 1 },
-  { text: "על המדינה להבטיח ביטוח בריאות אוניברסלי וחינם לכל אזרח.", axis: "econ", dir: -1 },
-  { text: "אדם שעובד קשה צריך להצליח בזכות עצמו, בלי לסמוך על המדינה.", axis: "econ", dir: 1 },
+  // === ECONOMY ===
+  { he: "המדינה צריכה להעלות את שכר המינימום באופן משמעותי, גם אם זה פוגע בעסקים קטנים.", en: "The state should significantly raise the minimum wage, even if it hurts small businesses.", axis: "econ", dir: -1 },
+  { he: "הפרטה של שירותים ציבוריים כמו בריאות וחינוך תשפר את איכותם.", en: "Privatizing public services like healthcare and education will improve their quality.", axis: "econ", dir: 1 },
+  { he: "המדינה צריכה לספק דיור ציבורי נרחב ולהגביל את מחירי הדירות.", en: "The state should provide extensive public housing and cap apartment prices.", axis: "econ", dir: -1 },
+  { he: "מיסים גבוהים על עשירים פוגעים בצמיחה הכלכלית ומרחיקים משקיעים.", en: "High taxes on the wealthy hurt economic growth and drive away investors.", axis: "econ", dir: 1 },
+  { he: "יש להרחיב משמעותית את קצבאות הרווחה, גם במחיר של גירעון תקציבי.", en: "Welfare benefits should be significantly expanded, even at the cost of budget deficit.", axis: "econ", dir: -1 },
+  { he: "השוק החופשי הוא הדרך הטובה ביותר לפתור בעיות כלכליות.", en: "The free market is the best way to solve economic problems.", axis: "econ", dir: 1 },
+  { he: "צריך להלאים חברות תשתית בסיסיות כמו חשמל, מים ותחבורה ציבורית.", en: "Basic infrastructure companies like electricity, water, and public transport should be nationalized.", axis: "econ", dir: -1 },
+  { he: "תחרות חופשית בין עסקים, ללא התערבות ממשלתית, מובילה לתוצאות הטובות ביותר עבור הצרכן.", en: "Free competition between businesses, without government intervention, leads to the best results for consumers.", axis: "econ", dir: 1 },
+  { he: "על המדינה להבטיח ביטוח בריאות אוניברסלי וחינם לכל אזרח.", en: "The state should guarantee universal free health insurance for every citizen.", axis: "econ", dir: -1 },
+  { he: "אדם שעובד קשה צריך להצליח בזכות עצמו, בלי לסמוך על המדינה.", en: "A hardworking person should succeed on their own merit, without relying on the state.", axis: "econ", dir: 1 },
 
-  // === AUTHORITY (10 questions) ===
-  { text: "צריך שיהיה גוף עצמאי שיכול לבטל החלטות של נבחרי ציבור אם הן פוגעות בזכויות בסיסיות.", axis: "auth", dir: -1 },
-  { text: "בזמן מלחמה, מותר לממשלה להגביל חופש עיתונות לטובת הביטחון.", axis: "auth", dir: 1 },
-  { text: "למשטרה צריכה להיות יותר סמכות לעצור חשודים גם ללא צו שופט.", axis: "auth", dir: 1 },
-  { text: "חופש הביטוי צריך להיות מוגן גם כשמדובר בדעות שפוגעות או מעליבות.", axis: "auth", dir: -1 },
-  { text: "מנהיג חזק שיכול לקבל החלטות מהר, גם בלי לחכות לאישור של כל גורם, הוא מה שהמדינה צריכה.", axis: "auth", dir: 1 },
-  { text: "גם במצב ביטחוני קשה, אסור לפגוע בזכויות בסיסיות של אנשים.", axis: "auth", dir: -1 },
-  { text: "יש לאפשר למדינה לעקוב אחרי תקשורת של אזרחים למניעת פשע וטרור.", axis: "auth", dir: 1 },
-  { text: "חשוב שאף גורם במדינה לא יהיה חזק מדי - לא הממשלה, לא הצבא, ולא בתי המשפט.", axis: "auth", dir: -1 },
-  { text: "סדר ציבורי חשוב יותר מחירויות אישיות.", axis: "auth", dir: 1 },
-  { text: "אם נבחר ציבור מקבל החלטה שרוב העם תומך בה, אף גורם לא צריך לעצור אותו.", axis: "auth", dir: 1 },
+  // === AUTHORITY ===
+  { he: "צריך שיהיה גוף עצמאי שיכול לבטל החלטות של נבחרי ציבור אם הן פוגעות בזכויות בסיסיות.", en: "There should be an independent body that can overturn elected officials' decisions if they violate basic rights.", axis: "auth", dir: -1 },
+  { he: "בזמן מלחמה, מותר לממשלה להגביל חופש עיתונות לטובת הביטחון.", en: "During wartime, the government may restrict freedom of the press for security.", axis: "auth", dir: 1 },
+  { he: "למשטרה צריכה להיות יותר סמכות לעצור חשודים גם ללא צו שופט.", en: "The police should have more authority to detain suspects without a judge's warrant.", axis: "auth", dir: 1 },
+  { he: "חופש הביטוי צריך להיות מוגן גם כשמדובר בדעות שפוגעות או מעליבות.", en: "Freedom of expression should be protected even for views that are hurtful or offensive.", axis: "auth", dir: -1 },
+  { he: "מנהיג חזק שיכול לקבל החלטות מהר, גם בלי לחכות לאישור של כל גורם, הוא מה שהמדינה צריכה.", en: "A strong leader who can make decisions quickly, without waiting for approval from every party, is what the country needs.", axis: "auth", dir: 1 },
+  { he: "גם במצב ביטחוני קשה, אסור לפגוע בזכויות בסיסיות של אנשים.", en: "Even in difficult security situations, basic rights must not be violated.", axis: "auth", dir: -1 },
+  { he: "יש לאפשר למדינה לעקוב אחרי תקשורת של אזרחים למניעת פשע וטרור.", en: "The state should be allowed to monitor citizens' communications to prevent crime and terrorism.", axis: "auth", dir: 1 },
+  { he: "חשוב שאף גורם במדינה לא יהיה חזק מדי - לא הממשלה, לא הצבא, ולא בתי המשפט.", en: "It's important that no single body in the country becomes too powerful — not the government, not the military, not the courts.", axis: "auth", dir: -1 },
+  { he: "סדר ציבורי חשוב יותר מחירויות אישיות.", en: "Public order is more important than personal liberties.", axis: "auth", dir: 1 },
+  { he: "אם נבחר ציבור מקבל החלטה שרוב העם תומך בה, אף גורם לא צריך לעצור אותו.", en: "If an elected official makes a decision that most of the public supports, no body should be able to stop it.", axis: "auth", dir: 1 },
 
-  // === RELIGION & STATE (11 questions) ===
-  { text: "תחבורה ציבורית צריכה לפעול בשבת בכל הארץ.", axis: "relig", dir: -1 },
-  { text: "נישואים אזרחיים צריכים להיות אפשרות חוקית בישראל.", axis: "relig", dir: -1 },
-  { text: "מערכת החינוך הממלכתית צריכה לכלול יותר תכני יהדות ומסורת.", axis: "relig", dir: 1 },
-  { text: "הרבנות הראשית צריכה לשמור על סמכותה בנושאי גיור ונישואים.", axis: "relig", dir: 1 },
-  { text: "חוקי כשרות צריכים לחול על כל המוסדות הציבוריים.", axis: "relig", dir: 1 },
-  { text: "יש להפריד לחלוטין בין דת למדינה בישראל.", axis: "relig", dir: -1 },
-  { text: "חנויות ומסעדות צריכות להיות סגורות בשבת לפי חוק.", axis: "relig", dir: 1 },
-  { text: "לימודי ליבה (מתמטיקה, אנגלית, מדעים) צריכים להיות חובה בכל מוסדות החינוך, כולל חרדיים.", axis: "relig", dir: -1 },
-  { text: "לזהות היהודית של המדינה צריך להיות משקל רב יותר מאשר לערכים ליברליים.", axis: "relig", dir: 1 },
-  { text: "בן אדם צריך להיות חופשי לבחור את אורח חייו בלי שהמדינה תכתיב לו ערכים דתיים.", axis: "relig", dir: -1 },
-  { text: "גיוס בני ישיבות לצבא צריך להיות חובה כמו לכל אזרח אחר.", axis: "relig", dir: -1 },
-  { text: "זוגות חד-מיניים צריכים לקבל את אותן הזכויות המשפטיות כמו כל זוג אחר, כולל אימוץ.", axis: "relig", dir: -1 },
-  { text: "המדינה צריכה להכיר רק במשפחה מסורתית - גבר ואישה - כבסיס לחברה.", axis: "relig", dir: 1 },
+  // === RELIGION & STATE ===
+  { he: "תחבורה ציבורית צריכה לפעול בשבת בכל הארץ.", en: "Public transportation should operate on Shabbat throughout the country.", axis: "relig", dir: -1 },
+  { he: "נישואים אזרחיים צריכים להיות אפשרות חוקית בישראל.", en: "Civil marriage should be a legal option in Israel.", axis: "relig", dir: -1 },
+  { he: "מערכת החינוך הממלכתית צריכה לכלול יותר תכני יהדות ומסורת.", en: "The state education system should include more Jewish and traditional content.", axis: "relig", dir: 1 },
+  { he: "הרבנות הראשית צריכה לשמור על סמכותה בנושאי גיור ונישואים.", en: "The Chief Rabbinate should maintain its authority over conversion and marriage.", axis: "relig", dir: 1 },
+  { he: "חוקי כשרות צריכים לחול על כל המוסדות הציבוריים.", en: "Kosher laws should apply to all public institutions.", axis: "relig", dir: 1 },
+  { he: "יש להפריד לחלוטין בין דת למדינה בישראל.", en: "There should be complete separation between religion and state in Israel.", axis: "relig", dir: -1 },
+  { he: "חנויות ומסעדות צריכות להיות סגורות בשבת לפי חוק.", en: "Stores and restaurants should be legally required to close on Shabbat.", axis: "relig", dir: 1 },
+  { he: "לימודי ליבה (מתמטיקה, אנגלית, מדעים) צריכים להיות חובה בכל מוסדות החינוך, כולל חרדיים.", en: "Core subjects (math, English, sciences) should be mandatory in all educational institutions, including Haredi ones.", axis: "relig", dir: -1 },
+  { he: "לזהות היהודית של המדינה צריך להיות משקל רב יותר מאשר לערכים ליברליים.", en: "The Jewish identity of the state should carry more weight than liberal values.", axis: "relig", dir: 1 },
+  { he: "בן אדם צריך להיות חופשי לבחור את אורח חייו בלי שהמדינה תכתיב לו ערכים דתיים.", en: "A person should be free to choose their lifestyle without the state dictating religious values.", axis: "relig", dir: -1 },
+  { he: "גיוס בני ישיבות לצבא צריך להיות חובה כמו לכל אזרח אחר.", en: "Drafting yeshiva students into the army should be mandatory, like for any other citizen.", axis: "relig", dir: -1 },
+  { he: "זוגות חד-מיניים צריכים לקבל את אותן הזכויות המשפטיות כמו כל זוג אחר, כולל אימוץ.", en: "Same-sex couples should receive the same legal rights as any other couple, including adoption.", axis: "relig", dir: -1 },
+  { he: "המדינה צריכה להכיר רק במשפחה מסורתית - גבר ואישה - כבסיס לחברה.", en: "The state should recognize only the traditional family — a man and a woman — as the foundation of society.", axis: "relig", dir: 1 },
 
-  // === CAMP (6 hidden questions - government performance + pro/anti) ===
-  { text: "הממשלה הנוכחית מובילה את המדינה בכיוון הנכון.", axis: "camp", dir: 1 },
-  { text: "צריך להחליף את ההנהגה הנוכחית גם אם אין אלטרנטיבה מושלמת.", axis: "camp", dir: -1 },
-  { text: "הממשלה ניהלה את המלחמה ברצועת עזה בצורה טובה.", axis: "camp", dir: 1 },
-  { text: "הממשלה ניהלה את המלחמה בלבנון בצורה טובה.", axis: "camp", dir: 1 },
-  { text: "הממשלה ניהלה את המערכה מול איראן בצורה טובה.", axis: "camp", dir: 1 },
-  { text: "הממשלה מטפלת בנושא גיוס החרדים בצורה מספקת.", axis: "camp", dir: 1 },
+  // === CAMP (hidden) ===
+  { he: "הממשלה הנוכחית מובילה את המדינה בכיוון הנכון.", en: "The current government is leading the country in the right direction.", axis: "camp", dir: 1 },
+  { he: "צריך להחליף את ההנהגה הנוכחית גם אם אין אלטרנטיבה מושלמת.", en: "The current leadership should be replaced even if there's no perfect alternative.", axis: "camp", dir: -1 },
+  { he: "הממשלה ניהלה את המלחמה ברצועת עזה בצורה טובה.", en: "The government managed the Gaza war well.", axis: "camp", dir: 1 },
+  { he: "הממשלה ניהלה את המלחמה בלבנון בצורה טובה.", en: "The government managed the Lebanon war well.", axis: "camp", dir: 1 },
+  { he: "הממשלה ניהלה את המערכה מול איראן בצורה טובה.", en: "The government managed the Iran campaign well.", axis: "camp", dir: 1 },
+  { he: "הממשלה מטפלת בנושא גיוס החרדים בצורה מספקת.", en: "The government is handling the Haredi draft issue adequately.", axis: "camp", dir: 1 },
 
-  // === IDENTITY (3 hidden-axis questions - not shown as axis but affects matching) ===
-  { text: "ישראל צריכה להישאר מדינה יהודית עם רוב יהודי ברור.", axis: "ident", dir: 1 },
-  { text: "הנרטיב הציוני הוא חלק מרכזי מהזהות שלי.", axis: "ident", dir: 1 },
-  { text: "כל האזרחים בישראל צריכים זכויות שוות לחלוטין, גם אם זה משנה את אופי המדינה.", axis: "ident", dir: -1 },
+  // === IDENTITY (hidden) ===
+  { he: "ישראל צריכה להישאר מדינה יהודית עם רוב יהודי ברור.", en: "Israel should remain a Jewish state with a clear Jewish majority.", axis: "ident", dir: 1 },
+  { he: "הנרטיב הציוני הוא חלק מרכזי מהזהות שלי.", en: "The Zionist narrative is a central part of my identity.", axis: "ident", dir: 1 },
+  { he: "כל האזרחים בישראל צריכים זכויות שוות לחלוטין, גם אם זה משנה את אופי המדינה.", en: "All citizens in Israel should have completely equal rights, even if it changes the character of the state.", axis: "ident", dir: -1 },
 
-  // === DEFENSE (12 questions: mix of direct and value-based) ===
-  // Direct questions
-  { text: "משא ומתן עם חמאס הוא צעד לגיטימי אם הוא מחזיר חטופים.", axis: "def", dir: -1 },
-  { text: "על ישראל להרחיב את ההתנחלויות ביהודה ושומרון.", axis: "def", dir: 1 },
-  { text: "שיתוף פעולה עם הרשות הפלסטינית חשוב לביטחון ישראל.", axis: "def", dir: -1 },
-  { text: "יש להחיל ריבונות ישראלית על כל שטחי יהודה ושומרון.", axis: "def", dir: 1 },
-  // Value-based questions
-  { text: "לפעמים צריך לדבר גם עם גורמים עוינים אם זה מציל חיים של אזרחים.", axis: "def", dir: -1 },
-  { text: "כוח צבאי הוא הדרך היחידה האפקטיבית להבטיח את ביטחון ישראל.", axis: "def", dir: 1 },
-  { text: "שלום עם שכנים שווה ויתורים, גם אם זה אומר לוותר על שטחים שיש לנו עליהם זכות היסטורית.", axis: "def", dir: -1 },
-  { text: "ישראל צריכה לפעול צבאית באופן נחרץ ומיידי נגד כל איום, ללא הססנות.", axis: "def", dir: 1 },
-  { text: "דיפלומטיה ולחץ בינלאומי הם כלים חשובים לא פחות מכוח צבאי.", axis: "def", dir: -1 },
-  { text: "ביטחון אמיתי נבנה גם דרך חוסן כלכלי וחברתי, לא רק דרך צבא.", axis: "def", dir: -1 },
-  { text: "עדיף לחיות בסכסוך מתמשך מאשר לוותר על ערכים ושטחים שהם חלק מהזהות שלנו.", axis: "def", dir: 1 },
-  { text: "מדינה חזקה יודעת גם מתי לעשות פשרות קשות כדי להגיע ליציבות ארוכת טווח.", axis: "def", dir: -1 },
+  // === DEFENSE ===
+  { he: "משא ומתן עם חמאס הוא צעד לגיטימי אם הוא מחזיר חטופים.", en: "Negotiating with Hamas is legitimate if it brings hostages home.", axis: "def", dir: -1 },
+  { he: "על ישראל להרחיב את ההתנחלויות ביהודה ושומרון.", en: "Israel should expand settlements in Judea and Samaria.", axis: "def", dir: 1 },
+  { he: "שיתוף פעולה עם הרשות הפלסטינית חשוב לביטחון ישראל.", en: "Cooperation with the Palestinian Authority is important for Israel's security.", axis: "def", dir: -1 },
+  { he: "יש להחיל ריבונות ישראלית על כל שטחי יהודה ושומרון.", en: "Israeli sovereignty should be applied to all of Judea and Samaria.", axis: "def", dir: 1 },
+  { he: "לפעמים צריך לדבר גם עם גורמים עוינים אם זה מציל חיים של אזרחים.", en: "Sometimes you must talk even with hostile actors if it saves civilian lives.", axis: "def", dir: -1 },
+  { he: "כוח צבאי הוא הדרך היחידה האפקטיבית להבטיח את ביטחון ישראל.", en: "Military force is the only effective way to ensure Israel's security.", axis: "def", dir: 1 },
+  { he: "שלום עם שכנים שווה ויתורים, גם אם זה אומר לוותר על שטחים שיש לנו עליהם זכות היסטורית.", en: "Peace with neighbors is worth concessions, even giving up land we have historical claims to.", axis: "def", dir: -1 },
+  { he: "ישראל צריכה לפעול צבאית באופן נחרץ ומיידי נגד כל איום, ללא הססנות.", en: "Israel should act militarily decisively and immediately against any threat, without hesitation.", axis: "def", dir: 1 },
+  { he: "דיפלומטיה ולחץ בינלאומי הם כלים חשובים לא פחות מכוח צבאי.", en: "Diplomacy and international pressure are just as important as military force.", axis: "def", dir: -1 },
+  { he: "ביטחון אמיתי נבנה גם דרך חוסן כלכלי וחברתי, לא רק דרך צבא.", en: "True security is built through economic and social resilience, not only through the military.", axis: "def", dir: -1 },
+  { he: "עדיף לחיות בסכסוך מתמשך מאשר לוותר על ערכים ושטחים שהם חלק מהזהות שלנו.", en: "It's better to live in ongoing conflict than to give up values and land that are part of our identity.", axis: "def", dir: 1 },
+  { he: "מדינה חזקה יודעת גם מתי לעשות פשרות קשות כדי להגיע ליציבות ארוכת טווח.", en: "A strong country also knows when to make hard compromises to achieve long-term stability.", axis: "def", dir: -1 },
 ];
+
+// Helper to get question text in current language
+function qText(q) { return q[currentLang] || q.he || q.text; }
 
 // ===== STATE =====
 let currentQ = 0;
@@ -1600,21 +2019,20 @@ function startQuiz() {
 
 function showQuestion() {
   const q = questions[currentQ];
-  const axisLabels = { econ: "כלכלה", auth: "סמכות", relig: "דת ומדינה", def: "ביטחון", ident: "זהות", camp: "מחנאות" };
   const axisColors = { econ: "var(--econ-color)", auth: "var(--auth-color)", relig: "var(--relig-color)", def: "var(--def-color)", ident: "var(--accent)", camp: "var(--warning)" };
 
   // Update progress
   document.getElementById('progressFill').style.width = ((currentQ / questions.length) * 100) + '%';
-  document.getElementById('progressLabel').textContent = `שאלה ${currentQ + 1} מתוך ${questions.length}`;
+  document.getElementById('progressLabel').textContent = t('questionOf', { current: currentQ + 1, total: questions.length });
   const tag = document.getElementById('axisTag');
-  tag.textContent = axisLabels[q.axis];
+  tag.textContent = t('tag_' + q.axis);
   tag.style.background = axisColors[q.axis];
 
-  const likertLabels = ["מסכים/ה מאוד", "מסכים/ה", "ניטרלי", "לא מסכים/ה", "לא מסכים/ה בכלל"];
+  const likertLabels = [t('likert_1'), t('likert_2'), t('likert_3'), t('likert_4'), t('likert_5')];
 
   let html = `<div class="question-card">
-    <div class="question-number">שאלה ${currentQ + 1} / ${questions.length}</div>
-    <div class="question-text">${q.text}</div>
+    <div class="question-number">${t('questionLabel', { current: currentQ + 1, total: questions.length })}</div>
+    <div class="question-text">${qText(q)}</div>
     <div class="likert-options">`;
 
   for (let i = 1; i <= 5; i++) {
@@ -1627,7 +2045,8 @@ function showQuestion() {
 
   // Nav buttons
   document.getElementById('prevBtn').disabled = currentQ === 0;
-  document.getElementById('nextBtn').textContent = currentQ === questions.length - 1 ? "סיום" : "הבא";
+  document.getElementById('prevBtn').textContent = t('prev');
+  document.getElementById('nextBtn').textContent = currentQ === questions.length - 1 ? t('finish') : t('next');
   document.getElementById('nextBtn').disabled = answers[currentQ] === null;
 }
 
@@ -1720,6 +2139,13 @@ function getPartyDistance(userScores, party) {
   if (maxDiff > 4) {
     dist += (maxDiff - 4) * 1.5;
   }
+  // HARD RELIGION GATE: parties with religion >= 8 (Shas, UTJ, Religious Zionism)
+  // should only match users who are actually religious (relig >= 6)
+  // Apply a strong distance penalty otherwise
+  if (party.relig >= 8 && userScores.relig < 6) {
+    const gap = 6 - userScores.relig;
+    dist += gap * 3; // Heavy penalty — scales with how secular the user is
+  }
   return dist;
 }
 
@@ -1760,13 +2186,13 @@ function showResults() {
   // Match card
   const best = ranked[0];
   document.getElementById('matchCard').innerHTML = `
-    <div class="match-label">המפלגה הקרובה אליך ביותר</div>
-    <img class="leader-img" src="${best.img}" alt="${best.leader}" onerror="this.style.display='none'">
-    <div class="party-name">${best.name}</div>
-    <div style="color:var(--text-dim);margin-bottom:10px;">${best.leader}</div>
+    <div class="match-label">${t('closest_party')}</div>
+    <img class="leader-img" src="${best.img}" alt="${tf(best.leader)}" onerror="this.style.display='none'">
+    <div class="party-name">${tf(best.name)}</div>
+    <div style="color:var(--text-dim);margin-bottom:10px;">${tf(best.leader)}</div>
     <div class="match-pct">${best.match}%</div>
-    <div class="match-label">התאמה</div>
-    ${best.threshold ? '<div style="color:var(--warning);font-size:0.8rem;margin-top:8px;">* מפלגה זו קרובה לאחוז החסימה בסקרים</div>' : ''}
+    <div class="match-label">${t('match')}</div>
+    ${best.threshold ? '<div style="color:var(--warning);font-size:0.8rem;margin-top:8px;">' + t('threshold_warning') + '</div>' : ''}
   `;
 
   // Top matches
@@ -1775,10 +2201,10 @@ function showResults() {
     const p = ranked[i];
     topHtml += `<div class="top-match-item">
       <div class="rank">#${i + 1}</div>
-      <img class="leader-thumb" src="${p.img}" alt="${p.leader}" onerror="this.style.display='none'">
-      <div class="name">${p.name}</div>
+      <img class="leader-thumb" src="${p.img}" alt="${tf(p.leader)}" onerror="this.style.display='none'">
+      <div class="name">${tf(p.name)}</div>
       <div class="pct">${p.match}%</div>
-      ${p.threshold ? '<div class="threshold-warning">קרוב לאחוז החסימה</div>' : ''}
+      ${p.threshold ? '<div class="threshold-warning">' + t('threshold_short') + '</div>' : ''}
     </div>`;
   }
   document.getElementById('topMatches').innerHTML = topHtml;
@@ -1790,6 +2216,7 @@ function showResults() {
   drawPartyInfoCards(ranked);
   drawInfluencerCards(scores);
   drawKnessetSim(ranked);
+  drawPolls();
   drawAgreement();
   drawSummary(scores, ranked);
 
@@ -1813,8 +2240,8 @@ function drawRadar(scores, bestParty) {
   ctx.clearRect(0, 0, W, H);
 
   const axes = ['econ', 'auth', 'relig', 'def'];
-  const labels = ['כלכלה', 'סמכות', 'דת ומדינה', 'ביטחון'];
-  const edgeLabels = ['ימין כלכלי', 'סמכותני', 'דתי', 'ניצי'];
+  const labels = [t('tag_econ'), t('tag_auth'), t('tag_relig'), t('tag_def')];
+  const edgeLabels = [t('al_econ_right'), t('al_auth_right'), t('al_relig_right'), t('al_def_right')];
   const n = axes.length;
 
   // Draw grid
@@ -1836,7 +2263,7 @@ function drawRadar(scores, bestParty) {
   ctx.font = '500 10px Heebo';
   ctx.fillStyle = '#8a8aaa';
   ctx.textAlign = 'center';
-  ctx.fillText('מרכז = שמאל / ליברלי / חילוני / יוני', cx, cy + 5);
+  ctx.fillText(currentLang === 'he' ? 'מרכז = שמאל / ליברלי / חילוני / יוני' : 'Center = Left / Liberal / Secular / Dove', cx, cy + 5);
 
   // Draw axis lines
   for (let i = 0; i < n; i++) {
@@ -1917,11 +2344,11 @@ function drawRadar(scores, bestParty) {
   ctx.fillRect(15, 15, 12, 12);
   ctx.fillStyle = '#3a4a5a';
   ctx.textAlign = 'start';
-  ctx.fillText('אתה', 32, 26);
+  ctx.fillText(t('you'), 32, 26);
   ctx.fillStyle = bestParty.color;
   ctx.fillRect(15, 35, 12, 12);
   ctx.fillStyle = '#3a4a5a';
-  ctx.fillText(bestParty.name + ' (' + bestParty.leader + ')', 32, 46);
+  ctx.fillText(tf(bestParty.name) + ' (' + tf(bestParty.leader) + ')', 32, 46);
 }
 
 // ===== COMPASS (2D SCATTER) =====
@@ -1993,9 +2420,9 @@ function drawCompass(canvasId, legendId, scores, xAxis, yAxis, xLabelL, xLabelR,
     ctx.font = '500 10px Heebo';
     ctx.fillStyle = '#3a4a5a';
     ctx.textAlign = 'center';
-    ctx.fillText(p.name, x, y - 14);
+    ctx.fillText(tf(p.name), x, y - 14);
 
-    legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${p.color};${p.threshold ? 'opacity:0.5':''}"></div>${p.name}</div>`;
+    legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${p.color};${p.threshold ? 'opacity:0.5':''}"></div>${tf(p.name)}</div>`;
   });
 
   // Plot user
@@ -2011,7 +2438,7 @@ function drawCompass(canvasId, legendId, scores, xAxis, yAxis, xLabelL, xLabelR,
   ctx.font = '700 10px Heebo';
   ctx.fillStyle = 'white';
   ctx.textAlign = 'center';
-  ctx.fillText('אתה', ux, uy + 4);
+  ctx.fillText(t('you'), ux, uy + 4);
 
   document.getElementById(legendId).innerHTML = legendHtml;
 }
@@ -2056,26 +2483,31 @@ function drawCombinedCompass(scores) {
   ctx.font = '600 13px Heebo';
   ctx.fillStyle = 'rgba(0,0,0,0.12)';
   ctx.textAlign = 'center';
-  ctx.fillText('שמאל ליברלי', pad + plotW * 0.25, pad + plotH * 0.92);
-  ctx.fillText('ימין ליברלי', pad + plotW * 0.75, pad + plotH * 0.92);
-  ctx.fillText('שמאל שמרני', pad + plotW * 0.25, pad + plotH * 0.08);
-  ctx.fillText('ימין שמרני', pad + plotW * 0.75, pad + plotH * 0.08);
+  const qL = currentLang === 'he'
+    ? { ll: 'שמאל ליברלי', lr: 'ימין ליברלי', ul: 'שמאל שמרני', ur: 'ימין שמרני',
+        left: 'שמאל', right: 'ימין', lib: 'ליברלי', cons: 'שמרני' }
+    : { ll: 'Liberal Left', lr: 'Liberal Right', ul: 'Conservative Left', ur: 'Conservative Right',
+        left: 'Left', right: 'Right', lib: 'Liberal', cons: 'Conservative' };
+  ctx.fillText(qL.ll, pad + plotW * 0.25, pad + plotH * 0.92);
+  ctx.fillText(qL.lr, pad + plotW * 0.75, pad + plotH * 0.92);
+  ctx.fillText(qL.ul, pad + plotW * 0.25, pad + plotH * 0.08);
+  ctx.fillText(qL.ur, pad + plotW * 0.75, pad + plotH * 0.08);
 
   // Labels
   ctx.font = '600 12px Heebo';
   ctx.fillStyle = '#5a6a7a';
   ctx.textAlign = 'center';
-  ctx.fillText('שמאל', pad + plotW * 0.15, H - 10);
-  ctx.fillText('ימין', pad + plotW * 0.85, H - 10);
+  ctx.fillText(qL.left, pad + plotW * 0.15, H - 10);
+  ctx.fillText(qL.right, pad + plotW * 0.85, H - 10);
   ctx.save();
   ctx.translate(12, pad + plotH * 0.85);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText('ליברלי', 0, 0);
+  ctx.fillText(qL.lib, 0, 0);
   ctx.restore();
   ctx.save();
   ctx.translate(12, pad + plotH * 0.15);
   ctx.rotate(-Math.PI / 2);
-  ctx.fillText('שמרני', 0, 0);
+  ctx.fillText(qL.cons, 0, 0);
   ctx.restore();
 
   // Plot parties
@@ -2098,9 +2530,9 @@ function drawCombinedCompass(scores) {
     ctx.font = '500 10px Heebo';
     ctx.fillStyle = '#3a4a5a';
     ctx.textAlign = 'center';
-    ctx.fillText(p.name, x, y - 14);
+    ctx.fillText(tf(p.name), x, y - 14);
 
-    legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${p.color};${p.threshold ? 'opacity:0.5':''}"></div>${p.name}</div>`;
+    legendHtml += `<div class="legend-item"><div class="legend-dot" style="background:${p.color};${p.threshold ? 'opacity:0.5':''}"></div>${tf(p.name)}</div>`;
   });
 
   // Plot user
@@ -2116,7 +2548,7 @@ function drawCombinedCompass(scores) {
   ctx.font = '700 10px Heebo';
   ctx.fillStyle = 'white';
   ctx.textAlign = 'center';
-  ctx.fillText('אתה', ux, uy + 4);
+  ctx.fillText(t('you'), ux, uy + 4);
 
   document.getElementById('legend3').innerHTML = legendHtml;
 }
@@ -2124,10 +2556,10 @@ function drawCombinedCompass(scores) {
 // ===== AXIS BREAKDOWN =====
 function drawAxisBreakdown(scores, ranked) {
   const axisInfo = [
-    { key: 'econ', name: 'כלכלה', left: 'שמאל כלכלי', right: 'ימין כלכלי', color: 'var(--econ-color)', leftColor: '#1976D2', rightColor: '#c62828' },
-    { key: 'auth', name: 'סמכות', left: 'ליברלי', right: 'סמכותני', color: 'var(--auth-color)', leftColor: '#2e7d32', rightColor: '#6a1b9a' },
-    { key: 'relig', name: 'דת ומדינה', left: 'חילוני', right: 'דתי', color: 'var(--relig-color)', leftColor: '#00838f', rightColor: '#5d4037' },
-    { key: 'def', name: 'ביטחון', left: 'יוני (שמאל)', right: 'ניצי (ימין)', color: 'var(--def-color)', leftColor: '#1976D2', rightColor: '#c62828' },
+    { key: 'econ', name: t('tag_econ'), left: t('al_econ_left'), right: t('al_econ_right'), color: 'var(--econ-color)', leftColor: '#1976D2', rightColor: '#c62828' },
+    { key: 'auth', name: t('tag_auth'), left: t('al_auth_left'), right: t('al_auth_right'), color: 'var(--auth-color)', leftColor: '#2e7d32', rightColor: '#6a1b9a' },
+    { key: 'relig', name: t('tag_relig'), left: t('al_relig_left'), right: t('al_relig_right'), color: 'var(--relig-color)', leftColor: '#00838f', rightColor: '#5d4037' },
+    { key: 'def', name: t('tag_def'), left: t('al_def_left'), right: t('al_def_right'), color: 'var(--def-color)', leftColor: '#1976D2', rightColor: '#c62828' },
   ];
 
   let html = '';
@@ -2164,13 +2596,13 @@ function drawAxisBreakdown(scores, ranked) {
     // Show top 3 party markers
     ranked.slice(0, 3).forEach(p => {
       const pPct = ((p[axis.key] - 1) / 9) * 100;
-      html += `<div style="position:absolute;top:50%;left:${pPct}%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:${p.color};border:1px solid rgba(0,0,0,0.2);z-index:2;" title="${p.name}"></div>`;
+      html += `<div style="position:absolute;top:50%;left:${pPct}%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:${p.color};border:1px solid rgba(0,0,0,0.2);z-index:2;" title="${tf(p.name)}"></div>`;
     });
 
     html += `</div>
       <div class="axis-labels" style="direction:ltr;">
         <span>${axis.left}</span>
-        <span style="opacity:0.4;">מרכז</span>
+        <span style="opacity:0.4;">${t('center')}</span>
         <span>${axis.right}</span>
       </div>
     </div>`;
@@ -2199,18 +2631,21 @@ function drawInfluencerCards(scores) {
   let html = '';
 
   top3.forEach(inf => {
-    const initials = inf.name.split(' ').map(w => w[0]).join('');
+    const displayName = tf(inf.name);
+    const displayRole = tf(inf.role);
+    const displayDesc = tf(inf.desc);
+    const initials = displayName.split(' ').map(w => w[0]).join('');
     const imgHtml = inf.img
-      ? `<img class="inf-img" src="${inf.img}" alt="${inf.name}" onerror="this.outerHTML='<div class=\\'inf-initials\\'>${initials}</div>'">`
+      ? `<img class="inf-img" src="${inf.img}" alt="${displayName}" onerror="this.outerHTML='<div class=\\'inf-initials\\'>${initials}</div>'">`
       : `<div class="inf-initials">${initials}</div>`;
 
     html += `<div class="influencer-card">
       ${imgHtml}
-      <div class="inf-name">${inf.name}</div>
-      <div class="inf-role">${inf.role}</div>
-      <div class="inf-desc">${inf.desc}</div>
+      <div class="inf-name">${displayName}</div>
+      <div class="inf-role">${displayRole}</div>
+      <div class="inf-desc">${displayDesc}</div>
       <div class="inf-match">${inf.match}%</div>
-      <div style="font-size:0.75rem;color:var(--text-dim);">התאמה</div>
+      <div style="font-size:0.75rem;color:var(--text-dim);">${t('match')}</div>
     </div>`;
   });
 
@@ -2227,10 +2662,10 @@ function drawPartyInfoCards(ranked) {
     html += `
     <div class="party-info-card ${expandedClass}" onclick="this.classList.toggle('expanded')">
       <div class="party-info-header">
-        <img src="${p.img}" alt="${p.leader}" onerror="this.style.display='none'">
+        <img src="${p.img}" alt="${tf(p.leader)}" onerror="this.style.display='none'">
         <div class="info-title">
-          <div class="party-name-sm">${p.name}</div>
-          <div class="leader-name-sm">${p.leader}</div>
+          <div class="party-name-sm">${tf(p.name)}</div>
+          <div class="leader-name-sm">${tf(p.leader)}</div>
         </div>
         <span class="match-badge">${p.match}%</span>
         <span class="expand-arrow">▼</span>
@@ -2238,32 +2673,32 @@ function drawPartyInfoCards(ranked) {
       <div class="party-info-body">
         <div class="party-info-content">
           <div class="info-section">
-            <h4>אידיאולוגיה</h4>
-            <p>${p.info.ideology}</p>
+            <h4>${t('info_ideology')}</h4>
+            <p>${tf(p.info.ideology)}</p>
           </div>
           <div class="info-section">
-            <h4>על המנהיג</h4>
-            <p>${p.info.leaderBio}</p>
+            <h4>${t('info_leader')}</h4>
+            <p>${tf(p.info.leaderBio)}</p>
           </div>
           <div class="info-section">
-            <h4>חברים בולטים</h4>
+            <h4>${t('info_members')}</h4>
             <div class="info-members">
-              ${p.info.members.map(m => `<span class="member-tag">${m}</span>`).join('')}
+              ${tfa(p.info.members).map(m => `<span class="member-tag">${m}</span>`).join('')}
             </div>
           </div>
           <div class="info-section">
             <div class="pros-cons">
               <div class="pro">
-                <h5>מה שתומכים אומרים</h5>
-                ${p.info.pro}
+                <h5>${t('info_pro')}</h5>
+                ${tf(p.info.pro)}
               </div>
               <div class="con">
-                <h5>מה שמבקרים אומרים</h5>
-                ${p.info.con}
+                <h5>${t('info_con')}</h5>
+                ${tf(p.info.con)}
               </div>
             </div>
           </div>
-          ${p.threshold ? '<p style="color:var(--warning);font-size:0.8rem;margin-top:10px;">* מפלגה זו קרובה לאחוז החסימה בסקרים</p>' : ''}
+          ${p.threshold ? '<p style="color:var(--warning);font-size:0.8rem;margin-top:10px;">' + t('threshold_warning') + '</p>' : ''}
         </div>
       </div>
     </div>`;
@@ -2276,10 +2711,16 @@ function drawPartyInfoCards(ranked) {
 function drawAgreement() {
   const agreement = calculateLawsAgreement();
 
+  const coalFooter = currentLang === 'he'
+    ? '* ההסכמה מחושבת לפי התשובות שלך על חוקים אמיתיים שעלו בכנסת ה-25. מקור החוק (קואליציה/אופוזיציה) לא נחשף בזמן השאלון.'
+    : '* Agreement is calculated based on your answers to real laws from the 25th Knesset. The law source (coalition/opposition) was not revealed during the quiz.';
+  const coalLabel = currentLang === 'he' ? 'קואליציה (ליכוד, ש"ס, יהדות התורה, עוצמה יהודית)' : 'Coalition (Likud, Shas, UTJ, Otzma Yehudit)';
+  const oppLabel = currentLang === 'he' ? 'אופוזיציה (יש עתיד, הדמוקרטים, ישראל ביתנו, ישר!)' : 'Opposition (Yesh Atid, Democrats, Yisrael Beiteinu, Yashar!)';
+
   document.getElementById('agreementSection').innerHTML = `
     <div class="agreement-bar-wrapper">
       <div class="agreement-bar-label">
-        <span>קואליציה (ליכוד, ש"ס, יהדות התורה, עוצמה יהודית, הציונות הדתית)</span>
+        <span>${coalLabel}</span>
         <span style="color:#e17055;">${agreement.coalition}%</span>
       </div>
       <div class="agreement-bar-outer">
@@ -2288,25 +2729,32 @@ function drawAgreement() {
     </div>
     <div class="agreement-bar-wrapper">
       <div class="agreement-bar-label">
-        <span>אופוזיציה (יש עתיד, הדמוקרטים, ישראל ביתנו, ישר!)</span>
+        <span>${oppLabel}</span>
         <span style="color:#0984e3;">${agreement.opposition}%</span>
       </div>
       <div class="agreement-bar-outer">
         <div class="agreement-bar-inner opposition-bar" style="width:${agreement.opposition}%">${agreement.opposition}%</div>
       </div>
     </div>
-    <p style="color:var(--text-dim);font-size:0.8rem;margin-top:10px;text-align:center;">
-      * ההסכמה מחושבת לפי התשובות שלך על חוקים אמיתיים שעלו בכנסת ה-25. מקור החוק (קואליציה/אופוזיציה) לא נחשף בזמן השאלון.
-    </p>
+    <p style="color:var(--text-dim);font-size:0.8rem;margin-top:10px;text-align:center;">${coalFooter}</p>
   `;
 }
 
 // ===== SUMMARY =====
 function drawSummary(scores, ranked) {
-  const econLabel = scores.econ <= 3.5 ? "שמאל כלכלי" : scores.econ <= 6.5 ? "מרכז כלכלי" : "ימין כלכלי";
-  const authLabel = scores.auth <= 3.5 ? "ליברלי" : scores.auth <= 6.5 ? "מתון" : "סמכותני";
-  const religLabel = scores.relig <= 3.5 ? "חילוני" : scores.relig <= 6.5 ? "מסורתי" : "דתי";
-  const defLabel = scores.def <= 3.5 ? "יוני (שמאל ביטחוני)" : scores.def <= 6.5 ? "מרכז ביטחוני" : "ניצי (ימין ביטחוני)";
+  const L = currentLang === 'he'
+    ? { econL: "שמאל כלכלי", econC: "מרכז כלכלי", econR: "ימין כלכלי",
+        authL: "ליברלי", authC: "מתון", authR: "סמכותני",
+        religL: "חילוני", religC: "מסורתי", religR: "דתי",
+        defL: "יוני (שמאל ביטחוני)", defC: "מרכז ביטחוני", defR: "ניצי (ימין ביטחוני)" }
+    : { econL: "Economic Left", econC: "Economic Center", econR: "Economic Right",
+        authL: "Liberal", authC: "Moderate", authR: "Authoritarian",
+        religL: "Secular", religC: "Traditional", religR: "Religious",
+        defL: "Dovish (Security Left)", defC: "Security Center", defR: "Hawkish (Security Right)" };
+  const econLabel = scores.econ <= 3.5 ? L.econL : scores.econ <= 6.5 ? L.econC : L.econR;
+  const authLabel = scores.auth <= 3.5 ? L.authL : scores.auth <= 6.5 ? L.authC : L.authR;
+  const religLabel = scores.relig <= 3.5 ? L.religL : scores.relig <= 6.5 ? L.religC : L.religR;
+  const defLabel = scores.def <= 3.5 ? L.defL : scores.def <= 6.5 ? L.defC : L.defR;
 
   const top3 = ranked.slice(0, 3);
 
@@ -2320,134 +2768,151 @@ function drawSummary(scores, ranked) {
   if (isRightWing && (isAntiCoalition || disagreesWithCoalition)) {
     // Right-wing person who disagrees with current coalition
     const rightAntibibi = ranked.filter(p =>
-      ['בנט 2026', '!ישר', 'ישראל ביתנו'].includes(p.name)
+      ['בנט 2026', '!ישר', 'ישראל ביתנו'].includes(pkey(p))
     ).slice(0, 2);
     if (rightAntibibi.length > 0) {
+      const insightTitle = currentLang === 'he' ? 'שים/י לב:' : 'Note:';
+      const insightBody = currentLang === 'he'
+        ? 'העמדות שלך ימניות, אבל אתה לא בהכרח מסכים/ה עם מה שהקואליציה הנוכחית עושה בפועל. יש מפלגות ימניות שחולקות את העמדות הביטחוניות והכלכליות שלך בלי הרכיבים האחרים של הקואליציה:'
+        : 'Your positions are right-wing, but you don\'t necessarily agree with what the current coalition is actually doing. Some right-wing parties share your security and economic positions without the other elements of the coalition:';
+      const insightFooter = currentLang === 'he'
+        ? 'ימין לא חייב להיות שם נרדף לקואליציה הנוכחית. בדקו את העמדות בפועל.'
+        : "Right-wing isn't synonymous with the current coalition. Check actual positions.";
       insight = `<div style="background:rgba(0,206,201,0.1);border:1px solid var(--secondary);border-radius:12px;padding:15px;margin-top:15px;">
-        <p><strong>שים/י לב:</strong> העמדות שלך ימניות, אבל אתה לא בהכרח מסכים/ה עם מה שהקואליציה הנוכחית עושה בפועל.
-        יש מפלגות ימניות שחולקות את העמדות הביטחוניות והכלכליות שלך בלי הרכיבים האחרים של הקואליציה:</p>
-        <ul style="margin-top:8px;padding-right:20px;">
-          ${rightAntibibi.map(p => `<li><strong>${p.name}</strong> (${p.leader}) - ${p.match}% התאמה</li>`).join('')}
+        <p><strong>${insightTitle}</strong> ${insightBody}</p>
+        <ul style="margin-top:8px;padding-inline-start:20px;">
+          ${rightAntibibi.map(p => `<li><strong>${tf(p.name)}</strong> (${tf(p.leader)}) - ${p.match}% ${t('match')}</li>`).join('')}
         </ul>
-        <p style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">ימין לא חייב להיות שם נרדף לקואליציה הנוכחית. בדקו את העמדות בפועל.</p>
+        <p style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">${insightFooter}</p>
       </div>`;
     }
   } else if (!isRightWing && !isAntiCoalition) {
-    // Left/center person who agrees with coalition - unusual, show them the data
+    const interestingTitle = currentLang === 'he' ? 'מעניין:' : 'Interesting:';
+    const interestingBody = currentLang === 'he'
+      ? 'העמדות שלך נוטות למרכז-שמאל, אבל הסכמת עם חלק מחוקי הקואליציה. שווה לבדוק האם ההסכמה היא עם הכיוון הכללי או עם חוקים ספציפיים.'
+      : 'Your positions lean center-left, but you agreed with some coalition laws. Worth checking whether the agreement is with the general direction or with specific laws.';
     insight = `<div style="background:rgba(253,203,110,0.1);border:1px solid var(--warning);border-radius:12px;padding:15px;margin-top:15px;">
-      <p><strong>מעניין:</strong> העמדות שלך נוטות למרכז-שמאל, אבל הסכמת עם חלק מחוקי הקואליציה. שווה לבדוק האם ההסכמה היא עם הכיוון הכללי או עם חוקים ספציפיים.</p>
+      <p><strong>${interestingTitle}</strong> ${interestingBody}</p>
     </div>`;
   }
 
   document.getElementById('summaryCard').innerHTML = `
-    <h2>סיכום הפרופיל שלך</h2>
-    <p><strong>כלכלה:</strong> ${econLabel} (${scores.econ.toFixed(1)}/10)</p>
-    <p><strong>סמכות:</strong> ${authLabel} (${scores.auth.toFixed(1)}/10)</p>
-    <p><strong>דת ומדינה:</strong> ${religLabel} (${scores.relig.toFixed(1)}/10)</p>
-    <p><strong>ביטחון:</strong> ${defLabel} (${scores.def.toFixed(1)}/10)</p>
+    <h2>${t('summary_title')}</h2>
+    <p><strong>${t('label_economy')}</strong> ${econLabel} (${scores.econ.toFixed(1)}/10)</p>
+    <p><strong>${t('label_authority')}</strong> ${authLabel} (${scores.auth.toFixed(1)}/10)</p>
+    <p><strong>${t('label_religion')}</strong> ${religLabel} (${scores.relig.toFixed(1)}/10)</p>
+    <p><strong>${t('label_defense')}</strong> ${defLabel} (${scores.def.toFixed(1)}/10)</p>
     <br>
-    <p><strong>סדר העדיפויות שלך:</strong> ${axisOrder.map((a, i) => `${i+1}. ${axisPriorityInfo[a].name}`).join(' | ')}</p>
+    <p><strong>${t('label_priorities')}</strong> ${axisOrder.map((a, i) => `${i+1}. ${getAxisPriorityInfo()[a].name}`).join(' | ')}</p>
     <br>
-    <p>המפלגה הקרובה ביותר לעמדותיך היא <strong>${top3[0].name}</strong> (${top3[0].match}% התאמה), ואחריה <strong>${top3[1].name}</strong> (${top3[1].match}%) ו-<strong>${top3[2].name}</strong> (${top3[2].match}%).</p>
+    <p>${currentLang === 'he' ? 'המפלגה הקרובה ביותר לעמדותיך היא' : 'Your closest match is'} <strong>${tf(top3[0].name)}</strong> (${top3[0].match}%), <strong>${tf(top3[1].name)}</strong> (${top3[1].match}%), <strong>${tf(top3[2].name)}</strong> (${top3[2].match}%).</p>
     <br>
-    <p><strong>קואליציה מול אופוזיציה:</strong> ${(() => {
-      if (agreement.coalition > agreement.opposition + 15) return `נטייה ברורה לקואליציה (${agreement.coalition}% הסכמה עם חוקי הקואליציה מול ${agreement.opposition}% עם האופוזיציה)`;
-      if (agreement.opposition > agreement.coalition + 15) return `נטייה ברורה לאופוזיציה (${agreement.opposition}% הסכמה עם עמדות האופוזיציה מול ${agreement.coalition}% עם הקואליציה)`;
-      return `ללא נטייה ברורה (${agreement.coalition}% קואליציה, ${agreement.opposition}% אופוזיציה)`;
+    <p><strong>${t('coalition_title')}:</strong> ${(() => {
+      if (currentLang === 'he') {
+        if (agreement.coalition > agreement.opposition + 15) return `נטייה ברורה לקואליציה (${agreement.coalition}% הסכמה עם חוקי הקואליציה מול ${agreement.opposition}% עם האופוזיציה)`;
+        if (agreement.opposition > agreement.coalition + 15) return `נטייה ברורה לאופוזיציה (${agreement.opposition}% הסכמה עם עמדות האופוזיציה מול ${agreement.coalition}% עם הקואליציה)`;
+        return `ללא נטייה ברורה (${agreement.coalition}% קואליציה, ${agreement.opposition}% אופוזיציה)`;
+      } else {
+        if (agreement.coalition > agreement.opposition + 15) return `Clear coalition lean (${agreement.coalition}% agreement with coalition laws vs ${agreement.opposition}% with opposition)`;
+        if (agreement.opposition > agreement.coalition + 15) return `Clear opposition lean (${agreement.opposition}% agreement with opposition positions vs ${agreement.coalition}% with coalition)`;
+        return `No clear lean (${agreement.coalition}% coalition, ${agreement.opposition}% opposition)`;
+      }
     })()}</p>
     ${insight}
     <br>
-    <p style="color:var(--text-dim);font-size:0.85rem;">* השאלון הזה נועד לעזור לך לחשוב על העמדות שלך ואינו מהווה המלצה פוליטית. התוצאות מבוססות על קרבה מתמטית לעמדות המוצהרות של המפלגות.</p>
+    <p style="color:var(--text-dim);font-size:0.85rem;">${currentLang === 'he' ? '* השאלון הזה נועד לעזור לך לחשוב על העמדות שלך ואינו מהווה המלצה פוליטית. התוצאות מבוססות על קרבה מתמטית לעמדות המוצהרות של המפלגות.' : '* This quiz is meant to help you think about your positions and is not a political recommendation. Results are based on mathematical proximity to parties\' stated positions.'}</p>
   `;
 }
 
 // ===== LAWS DATA =====
 // Curated 5+5: diverse across axes, real laws from the 25th Knesset
 const laws = [
-  // === COALITION (5) - covers auth, relig, def ===
+  // === COALITION (5) ===
   {
-    title: "רפורמה בוועדה לבחירת שופטים",
-    desc: "שינוי הרכב הוועדה לבחירת שופטים כך שלנציגים פוליטיים יהיה רוב על חשבון נציגי לשכת עורכי הדין.",
-    status: "passed",
-    statusText: "עבר (מרץ 2025)",
+    title: { he: "רפורמה בוועדה לבחירת שופטים", en: "Judicial Selection Committee Reform" },
+    desc: { he: "שינוי הרכב הוועדה לבחירת שופטים כך שלנציגים פוליטיים יהיה רוב על חשבון נציגי לשכת עורכי הדין.", en: "Restructuring the Judicial Selection Committee so political appointees have a majority over Bar Association representatives." },
     source: "coalition",
     axes: { auth: 1, relig: 0, def: 0, econ: 0 }
   },
   {
-    title: "עונש מוות למחבלים",
-    desc: "עונש מוות בתלייה לפלסטינים שהורשעו בפעולות טרור קטלניות בבתי דין צבאיים. החוק לא חל רטרואקטיבית (לא על מחבלי 7.10), לא חל על אזרחי ישראל או תושבי קבע, ונאכף רק בבתי דין צבאיים.",
-    status: "passed",
-    statusText: "עבר (62-47)",
+    title: { he: "עונש מוות למחבלים", en: "Death Penalty for Terrorists" },
+    desc: { he: "עונש מוות בתלייה לפלסטינים שהורשעו בפעולות טרור קטלניות בבתי דין צבאיים. החוק לא חל רטרואקטיבית (לא על מחבלי 7.10), לא חל על אזרחי ישראל או תושבי קבע, ונאכף רק בבתי דין צבאיים.", en: "Death penalty by hanging for Palestinians convicted of deadly terror acts in military courts. The law does not apply retroactively (not to Oct 7 terrorists), does not apply to Israeli citizens or permanent residents, and is only enforced in military courts." },
     source: "coalition",
     axes: { auth: 1, relig: 0, def: 1, econ: 0 }
   },
   {
-    title: "הרחבת סמכויות בתי דין רבניים",
-    desc: "הרחבת סמכות בתי הדין הרבניים לדון בסכסוכים אזרחיים כמו תעסוקה ושכנים.",
-    status: "passed",
-    statusText: "עבר (65-41)",
+    title: { he: "הרחבת סמכויות בתי דין רבניים", en: "Expansion of Rabbinical Courts' Authority" },
+    desc: { he: "הרחבת סמכות בתי הדין הרבניים לדון בסכסוכים אזרחיים כמו תעסוקה ושכנים.", en: "Expanding rabbinical courts' jurisdiction to arbitrate civil disputes like employment and neighbor conflicts." },
     source: "coalition",
     axes: { auth: 0, relig: 1, def: 0, econ: 0 }
   },
   {
-    title: "מתווה גיוס חרדים (ביסמוט)",
-    desc: "מתווה לגיוס הדרגתי של חרדים עם מכסות נמוכות וללא יעדי קרבי מחייבים. הוקפא.",
-    status: "rejected",
-    statusText: "הוקפא",
+    title: { he: "מתווה גיוס חרדים (ביסמוט)", en: "Haredi Draft Outline (Bismuth)" },
+    desc: { he: "מתווה לגיוס הדרגתי של חרדים עם מכסות נמוכות וללא יעדי קרבי מחייבים. הוקפא.", en: "A framework for gradual Haredi conscription with low quotas and no binding combat targets. Frozen." },
     source: "coalition",
     axes: { auth: 0, relig: 1, def: -0.5, econ: 0 }
   },
   {
-    title: "מיסוי 80% על תרומות זרות לעמותות",
-    desc: "מס של 80% על תרומות ממשלות זרות לעמותות ישראליות ושלילת זכות העמידה שלהן בבג\"ץ.",
-    status: "pending",
-    statusText: "בהליך חקיקה",
+    title: { he: "מיסוי 80% על תרומות זרות לעמותות", en: "80% Tax on Foreign Donations to NGOs" },
+    desc: { he: "מס של 80% על תרומות ממשלות זרות לעמותות ישראליות ושלילת זכות העמידה שלהן בבג\"ץ.", en: "An 80% tax on foreign government donations to Israeli NGOs, and revoking their legal standing in the Supreme Court." },
     source: "coalition",
     axes: { auth: 1, relig: 0, def: 0, econ: 0 }
   },
 
-  // === OPPOSITION (5) - covers auth, relig, def ===
+  // === OPPOSITION (5) ===
   {
-    title: "ועדת חקירה ממלכתית ל-7 באוקטובר",
-    desc: "ועדת חקירה עצמאית בראשות שופט בג\"ץ לחקירת כשלי 7.10 במקום ועדה ממונה פוליטית.",
-    status: "rejected",
-    statusText: "נדחה (45-53)",
+    title: { he: "ועדת חקירה ממלכתית ל-7 באוקטובר", en: "State Commission of Inquiry into October 7" },
+    desc: { he: "ועדת חקירה עצמאית בראשות שופט בג\"ץ לחקירת כשלי 7.10 במקום ועדה ממונה פוליטית.", en: "An independent commission of inquiry headed by a Supreme Court justice to investigate the Oct 7 failures, instead of a politically appointed committee." },
     source: "opposition",
     axes: { auth: -1, relig: 0, def: 0, econ: 0 }
   },
   {
-    title: "נישואים אזרחיים",
-    desc: "אפשרות חוקית לנישואים אזרחיים בישראל, ללא תלות ברבנות הראשית.",
-    status: "rejected",
-    statusText: "לא עבר",
+    title: { he: "נישואים אזרחיים", en: "Civil Marriage" },
+    desc: { he: "אפשרות חוקית לנישואים אזרחיים בישראל, ללא תלות ברבנות הראשית.", en: "A legal option for civil marriage in Israel, independent of the Chief Rabbinate." },
     source: "opposition",
     axes: { auth: 0, relig: -1, def: 0, econ: 0 }
   },
   {
-    title: "גיוס שוויוני - שוויון בנטל",
-    desc: "גיוס שווה לכל האזרחים כולל חרדים, עם אכיפה מלאה ויעדים מחייבים.",
-    status: "rejected",
-    statusText: "לא עבר",
+    title: { he: "גיוס שוויוני - שוויון בנטל", en: "Equal Conscription - Equal Burden" },
+    desc: { he: "גיוס שווה לכל האזרחים כולל חרדים, עם אכיפה מלאה ויעדים מחייבים.", en: "Equal conscription for all citizens including Haredim, with full enforcement and binding targets." },
     source: "opposition",
     axes: { auth: 0, relig: -1, def: 0.5, econ: 0 }
   },
   {
-    title: "תחבורה ציבורית בשבת",
-    desc: "הפעלת אוטובוסים ורכבות בשבת ביישובים עם רוב חילוני.",
-    status: "rejected",
-    statusText: "נדחה (48-43)",
+    title: { he: "תחבורה ציבורית בשבת", en: "Public Transportation on Shabbat" },
+    desc: { he: "הפעלת אוטובוסים ורכבות בשבת ביישובים עם רוב חילוני.", en: "Operating buses and trains on Shabbat in localities with a secular majority." },
     source: "opposition",
     axes: { auth: 0, relig: -1, def: 0, econ: 0 }
   },
   {
-    title: "ביטול התיישנות על עבירות מין בקטינים",
-    desc: "ביטול מלא של תקופת ההתיישנות בעבירות מין שבוצעו בקטינים. עברה קריאה טרומית פה אחד (41-0) אך משרד המשפטים חסם את החוק המלא.",
-    status: "rejected",
-    statusText: "נחסם על ידי הקואליציה",
+    title: { he: "ביטול התיישנות על עבירות מין בקטינים", en: "Abolishing Statute of Limitations on Sex Crimes Against Minors" },
+    desc: { he: "ביטול מלא של תקופת ההתיישנות בעבירות מין שבוצעו בקטינים. עברה קריאה טרומית פה אחד (41-0) אך משרד המשפטים חסם את החוק המלא.", en: "Complete abolition of the statute of limitations for sex crimes committed against minors. Passed preliminary reading unanimously (41-0) but was blocked by the Ministry of Justice." },
     source: "opposition",
     axes: { auth: -0.5, relig: 0, def: 0, econ: 0 }
   },
 ];
+
+// Helper to get translated field (supports strings, {he,en} objects, and arrays of those)
+function tf(field) {
+  if (Array.isArray(field)) return field; // arrays handled separately
+  if (typeof field === 'object' && field !== null) return field[currentLang] || field.he;
+  return field;
+}
+
+// Helper to get translated array
+function tfa(field) {
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'object' && field !== null) return field[currentLang] || field.he || [];
+  return [];
+}
+
+// Stable key for party lookups (always uses Hebrew name)
+function pkey(p) {
+  if (typeof p === 'string') return p;
+  if (p && typeof p.name === 'object') return p.name.he;
+  if (p && p.name) return p.name;
+  return p;
+}
 
 // Shuffle laws so coalition and opposition are mixed
 const shuffledLaws = [...laws].sort(() => Math.random() - 0.5);
@@ -2459,12 +2924,16 @@ let lawShuffleMap = shuffledLaws.map(sl => laws.indexOf(sl));
 // ===== LAWS PHASE LOGIC =====
 // ===== PRIORITY RANKING =====
 let axisOrder = ['def', 'relig', 'econ', 'auth']; // default order
-const axisPriorityInfo = {
-  econ: { name: 'כלכלה', desc: 'מיסים, רווחה, שוק חופשי, שכר מינימום', color: 'var(--econ-color)' },
-  auth: { name: 'סמכות ודמוקרטיה', desc: 'בג"ץ, חופש ביטוי, זכויות פרט, שלטון חוק', color: 'var(--auth-color)' },
-  relig: { name: 'דת ומדינה', desc: 'שבת, נישואים, גיוס חרדים, זכויות להט"ב', color: 'var(--relig-color)' },
-  def: { name: 'ביטחון', desc: 'צבא, שטחים, משא ומתן, הסכמי שלום', color: 'var(--def-color)' },
-};
+function getAxisPriorityInfo() {
+  return {
+    econ: { name: t('pri_econ'), desc: t('pri_econ_desc'), color: 'var(--econ-color)' },
+    auth: { name: t('pri_auth'), desc: t('pri_auth_desc'), color: 'var(--auth-color)' },
+    relig: { name: t('pri_relig'), desc: t('pri_relig_desc'), color: 'var(--relig-color)' },
+    def: { name: t('pri_def'), desc: t('pri_def_desc'), color: 'var(--def-color)' },
+  };
+}
+// Keep backwards compat
+const axisPriorityInfo = new Proxy({}, { get: (_, key) => getAxisPriorityInfo()[key] });
 
 function startPriorityPhase() {
   document.getElementById('quiz').style.display = 'none';
@@ -2475,8 +2944,9 @@ function startPriorityPhase() {
 
 function renderPriorityList() {
   let html = '';
+  const infoMap = getAxisPriorityInfo();
   axisOrder.forEach((axis, i) => {
-    const info = axisPriorityInfo[axis];
+    const info = infoMap[axis];
     html += `<div class="priority-item" data-axis="${axis}">
       <div class="priority-rank">${i + 1}</div>
       <div class="priority-info">
@@ -2529,17 +2999,16 @@ function showLaw() {
 
   // Progress
   document.getElementById('lawsProgressFill').style.width = ((currentLaw / shuffledLaws.length) * 100) + '%';
-  document.getElementById('lawsProgressLabel').textContent = `חוק ${currentLaw + 1} מתוך ${shuffledLaws.length}`;
-  // Don't reveal source during quiz to avoid bias!
-  document.getElementById('lawsSourceTag').textContent = 'חוקים';
+  document.getElementById('lawsProgressLabel').textContent = t('lawOf', { current: currentLaw + 1, total: shuffledLaws.length });
+  document.getElementById('lawsSourceTag').textContent = t('lawsTag');
   document.getElementById('lawsSourceTag').style.background = 'var(--primary)';
 
-  const likertLabels = ["מסכים/ה מאוד", "מסכים/ה", "ניטרלי", "לא מסכים/ה", "לא מסכים/ה בכלל"];
+  const likertLabels = [t('likert_1'), t('likert_2'), t('likert_3'), t('likert_4'), t('likert_5')];
   const origIdx = lawShuffleMap[currentLaw];
 
   let html = `<div class="law-card">
-    <div class="law-title">${law.title}</div>
-    <div class="law-desc">${law.desc}</div>
+    <div class="law-title">${tf(law.title)}</div>
+    <div class="law-desc">${tf(law.desc)}</div>
     <div class="likert-options">`;
 
   for (let i = 1; i <= 5; i++) {
@@ -2552,7 +3021,8 @@ function showLaw() {
 
   // Nav buttons
   document.getElementById('lawPrevBtn').disabled = currentLaw === 0;
-  document.getElementById('lawNextBtn').textContent = currentLaw === shuffledLaws.length - 1 ? 'לתוצאות' : 'הבא';
+  document.getElementById('lawPrevBtn').textContent = t('prev');
+  document.getElementById('lawNextBtn').textContent = currentLaw === shuffledLaws.length - 1 ? t('toResults') : t('next');
   document.getElementById('lawNextBtn').disabled = lawAnswers[origIdx] === null;
 }
 
@@ -2660,7 +3130,7 @@ function openShareCard() {
   document.getElementById('shareOverlay').classList.add('active');
   if (savedBest) {
     document.getElementById('shareImg').src = savedBest.img;
-    document.getElementById('shareParty').textContent = savedBest.name;
+    document.getElementById('shareParty').textContent = tf(savedBest.name);
     document.getElementById('sharePct').textContent = savedBest.match + '%';
     drawMiniRadar(savedScores, savedBest);
   }
@@ -2678,7 +3148,7 @@ function drawMiniRadar(scores, bestParty) {
   ctx.clearRect(0, 0, W, H);
 
   const axes = ['econ', 'auth', 'relig', 'def'];
-  const labels = ['כלכלה', 'סמכות', 'דת', 'ביטחון'];
+  const labels = [t('tag_econ'), t('tag_auth'), t('tag_relig'), t('tag_def')];
   const n = 4;
 
   // Grid
@@ -2753,7 +3223,7 @@ function downloadShareCard() {
   // Party name + match
   ctx.font = '700 22px Heebo';
   ctx.fillStyle = '#1a2a3a';
-  ctx.fillText(savedBest.name, 200, 410);
+  ctx.fillText(tf(savedBest.name), 200, 410);
   ctx.font = '900 32px Heebo';
   ctx.fillStyle = '#0d47a1';
   ctx.fillText(savedBest.match + '%', 200, 445);
@@ -2775,7 +3245,7 @@ function saveStats(scores, bestParty) {
   try {
     const stats = JSON.parse(localStorage.getItem('matzpen_stats') || '{"total":0,"parties":{},"coalition":0,"opposition":0,"axes":{"econ":[],"auth":[],"relig":[],"def":[]}}');
     stats.total++;
-    stats.parties[bestParty.name] = (stats.parties[bestParty.name] || 0) + 1;
+    stats.parties[pkey(bestParty)] = (stats.parties[pkey(bestParty)] || 0) + 1;
     const agreement = calculateLawsAgreement();
     if (agreement.coalition > agreement.opposition) stats.coalition++;
     else stats.opposition++;
@@ -2792,21 +3262,22 @@ function drawAnonStats() {
   try {
     const stats = JSON.parse(localStorage.getItem('matzpen_stats') || '{}');
     if (!stats.total || stats.total < 2) {
-      document.getElementById('anonStats').innerHTML = '<p style="text-align:center;color:var(--text-dim);">צריך לפחות 2 משתתפים כדי להציג סטטיסטיקות. שתפו עם חברים!</p>';
+      document.getElementById('anonStats').innerHTML = '<p style="text-align:center;color:var(--text-dim);">' + t('need_more_stats') + '</p>';
       return;
     }
 
-    let html = `<p style="text-align:center;color:var(--text-dim);margin-bottom:15px;">מבוסס על ${stats.total} משתתפים</p>`;
+    let html = `<p style="text-align:center;color:var(--text-dim);margin-bottom:15px;">${t('based_on', { n: stats.total })}</p>`;
 
     // Top parties
     const sortedParties = Object.entries(stats.parties).sort((a,b) => b[1]-a[1]).slice(0, 5);
-    html += '<h4 style="margin-bottom:10px;color:#0d47a1;">המפלגות הפופולריות</h4>';
+    html += '<h4 style="margin-bottom:10px;color:#0d47a1;">' + t('popular_parties') + '</h4>';
     sortedParties.forEach(([name, count]) => {
       const pct = Math.round(count / stats.total * 100);
-      const party = parties.find(p => p.name === name);
+      const party = parties.find(p => pkey(p) === name);
       const color = party ? party.color : '#0d47a1';
+      const displayName = party ? tf(party.name) : name;
       html += `<div class="stat-row">
-        <span class="stat-label">${name}</span>
+        <span class="stat-label">${displayName}</span>
         <div class="stat-bar-outer">
           <div class="stat-bar-inner" style="width:${pct}%;background:${color};">${pct}%</div>
         </div>
@@ -2816,13 +3287,13 @@ function drawAnonStats() {
     // Coalition vs opposition
     const coalPct = Math.round(stats.coalition / stats.total * 100);
     const oppPct = 100 - coalPct;
-    html += `<h4 style="margin:20px 0 10px;color:#0d47a1;">קואליציה מול אופוזיציה</h4>
+    html += `<h4 style="margin:20px 0 10px;color:#0d47a1;">${t('coalition_title')}</h4>
       <div class="stat-row">
-        <span class="stat-label">קואליציה</span>
+        <span class="stat-label">${t('coalition')}</span>
         <div class="stat-bar-outer"><div class="stat-bar-inner" style="width:${coalPct}%;background:linear-gradient(90deg,#e17055,#d63031);">${coalPct}%</div></div>
       </div>
       <div class="stat-row">
-        <span class="stat-label">אופוזיציה</span>
+        <span class="stat-label">${t('opposition')}</span>
         <div class="stat-bar-outer"><div class="stat-bar-inner" style="width:${oppPct}%;background:linear-gradient(90deg,#0984e3,#6c5ce7);">${oppPct}%</div></div>
       </div>`;
 
@@ -2830,6 +3301,45 @@ function drawAnonStats() {
   } catch(e) {
     document.getElementById('anonStats').innerHTML = '<p style="text-align:center;color:var(--text-dim);">לא ניתן לטעון סטטיסטיקות</p>';
   }
+}
+
+// ===== POLLS DATA =====
+// Based on January-March 2026 polling averages
+const pollData = [
+  { name: "ליכוד", seats: 25 },
+  { name: "בנט 2026", seats: 19 },
+  { name: 'חד"ש-תע"ל', seats: 12 }, // Joint list could be here
+  { name: "!ישר", seats: 11 },
+  { name: "הדמוקרטים", seats: 10 },
+  { name: "עוצמה יהודית", seats: 10 },
+  { name: 'ש"ס', seats: 10 },
+  { name: "ישראל ביתנו", seats: 8 },
+  { name: "יהדות התורה", seats: 8 },
+  { name: 'רע"ם', seats: 5 },
+  { name: "כחול לבן", seats: 2 },
+  { name: "הציונות הדתית", seats: 0 },
+];
+
+function drawPolls() {
+  let html = '';
+  pollData.forEach(poll => {
+    const party = parties.find(p => pkey(p) === poll.name);
+    if (!party) return;
+    const widthPct = (poll.seats / 30) * 100;
+    const belowThreshold = poll.seats < 4;
+    html += `<div class="poll-row">
+      <img class="poll-img" src="${party.img}" alt="${tf(party.leader)}" onerror="this.style.visibility='hidden'">
+      <span class="poll-name">${tf(party.name)}</span>
+      <div class="poll-bar-outer">
+        <div class="poll-bar-inner" style="width:${widthPct}%;background:${party.color};opacity:${belowThreshold ? 0.4 : 1};">
+          ${poll.seats > 0 ? poll.seats + ' ' + t('seats') : ''}
+        </div>
+      </div>
+      <span class="poll-seats" style="${belowThreshold ? 'color:var(--warning);' : ''}">${poll.seats}</span>
+    </div>`;
+  });
+  html += `<p style="font-size:0.75rem;color:var(--text-dim);text-align:center;margin-top:10px;">* הקו האדום מסמן את אחוז החסימה (4 מנדטים). סך הכל: ${pollData.reduce((s,p)=>s+p.seats,0)} / 120</p>`;
+  document.getElementById('pollsSection').innerHTML = html;
 }
 
 // ===== KNESSET SIMULATOR =====
@@ -2863,7 +3373,7 @@ function drawKnessetSim(ranked) {
     html += '<div class="knesset-row">';
     for (let i = 0; i < rowSize && seatIdx < allSeats.length; i++) {
       const p = allSeats[seatIdx++];
-      html += `<div class="knesset-seat" style="background:${p.color};" title="${p.name} (${p.seats})"></div>`;
+      html += `<div class="knesset-seat" style="background:${p.color};" title="${tf(p.name)} (${p.seats})"></div>`;
     }
     html += '</div>';
   });
@@ -2875,7 +3385,7 @@ function drawKnessetSim(ranked) {
   seats.forEach(p => {
     legendHtml += `<div class="knesset-legend-item">
       <div class="knesset-legend-dot" style="background:${p.color};"></div>
-      <span>${p.name} (${p.seats})</span>
+      <span>${tf(p.name)} (${p.seats})</span>
     </div>`;
   });
   document.getElementById('knessetLegend').innerHTML = legendHtml;
