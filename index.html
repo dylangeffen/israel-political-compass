@@ -2154,6 +2154,11 @@ function submitToSheets(scores, ranked) {
   if (hasAlreadySubmitted()) return; // Don't submit twice
 
   const agreement = calculateLawsAgreement();
+  // Build individual answer fields: q1, q2, ..., q54, law1, ..., law10
+  const individualAnswers = {};
+  answers.forEach((a, i) => { individualAnswers['q' + (i+1)] = a || ''; });
+  lawAnswers.forEach((a, i) => { individualAnswers['law' + (i+1)] = a || ''; });
+
   const payload = {
     age: userDemographics.age,
     gender: userDemographics.gender,
@@ -2172,8 +2177,7 @@ function submitToSheets(scores, ranked) {
     priority2: axisOrder[1],
     priority3: axisOrder[2],
     priority4: axisOrder[3],
-    answersRaw: JSON.stringify(answers),
-    lawAnswersRaw: JSON.stringify(lawAnswers),
+    ...individualAnswers,
     deviceId: getDeviceId()
   };
 
