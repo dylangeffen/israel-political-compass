@@ -1047,6 +1047,51 @@
     background: rgba(13,71,161,0.06);
   }
 
+  /* ===== DEMOGRAPHICS FORM ===== */
+  .demo-form {
+    max-width: 450px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .demo-field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+
+  .demo-field select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--card-border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%235a6a7a'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 15px center;
+  }
+
+  .demo-field select:focus {
+    outline: none;
+    border-color: #0d47a1;
+  }
+
+  .demo-note {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.5;
+  }
+
   /* ===== PRIORITY RANKING ===== */
   .priority-list {
     display: flex;
@@ -1262,6 +1307,59 @@
   </div>
 
   <button class="btn" onclick="startQuiz()">בואו נתחיל</button>
+</div>
+
+<!-- ===== DEMOGRAPHICS ===== -->
+<div class="container" id="demographics" style="display:none;min-height:100vh;padding-top:60px;">
+  <div class="laws-intro">
+    <h2>לפני שמתחילים</h2>
+    <p style="color:var(--text-dim);">כמה פרטים קצרים שיעזרו לנו להבין טוב יותר את התוצאות. הנתונים אנונימיים לחלוטין.</p>
+  </div>
+
+  <div class="demo-form">
+    <div class="demo-field">
+      <label>גיל</label>
+      <select id="demoAge">
+        <option value="" disabled selected>בחרו טווח גילאים</option>
+        <option value="16-18">16-18</option>
+        <option value="19-24">19-24</option>
+        <option value="25-34">25-34</option>
+        <option value="35-44">35-44</option>
+        <option value="45-54">45-54</option>
+        <option value="55+">55+</option>
+      </select>
+    </div>
+
+    <div class="demo-field">
+      <label>מגדר</label>
+      <select id="demoGender">
+        <option value="" disabled selected>בחרו</option>
+        <option value="male">זכר</option>
+        <option value="female">נקבה</option>
+        <option value="other">אחר</option>
+        <option value="prefer_not">מעדיף/ה לא לציין</option>
+      </select>
+    </div>
+
+    <div class="demo-field">
+      <label>מגזר</label>
+      <select id="demoSector">
+        <option value="" disabled selected>בחרו מגזר</option>
+        <option value="secular">יהודי חילוני</option>
+        <option value="traditional">יהודי מסורתי</option>
+        <option value="religious_zionist">דתי לאומי</option>
+        <option value="haredi">חרדי</option>
+        <option value="hardali">חרד"לי</option>
+        <option value="arab">ערבי</option>
+        <option value="druze">דרוזי</option>
+        <option value="prefer_not">מעדיף/ה לא לציין</option>
+      </select>
+    </div>
+
+    <p class="demo-note">* הנתונים נשמרים באופן אנונימי ומשמשים רק לניתוח סטטיסטי כללי. לא נאסף שום מידע מזהה.</p>
+
+    <button class="btn" onclick="submitDemographics()" style="align-self:center;">המשך לשאלון</button>
+  </div>
 </div>
 
 <!-- ===== QUIZ ===== -->
@@ -2008,10 +2106,88 @@ let currentQ = 0;
 let answers = new Array(questions.length).fill(null); // null = unanswered, 1-5
 
 // ===== QUIZ LOGIC =====
+// ===== GOOGLE SHEETS API =====
+const SHEETS_API = 'https://script.google.com/macros/s/AKfycbzM0m6-GOeTxslWyW6V0XHUeTBONpQ3lexv3YzYZBiqCjIvzIirx33os97Q1tBtWRbnjQ/exec';
+
+let userDemographics = { age: '', gender: '', sector: '' };
+
+// Generate simple device ID for one-time fill check
+function getDeviceId() {
+  let id = localStorage.getItem('matzpen_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('matzpen_device_id', id);
+  }
+  return id;
+}
+
+function hasAlreadySubmitted() {
+  return localStorage.getItem('matzpen_submitted') === 'true';
+}
+
 function startQuiz() {
+  // Check if already submitted
+  if (hasAlreadySubmitted()) {
+    // Let them retake but don't resubmit data
+    document.getElementById('welcome').style.display = 'none';
+    document.getElementById('quiz').style.display = 'block';
+    showQuestion();
+    return;
+  }
+  // Show demographics form
   document.getElementById('welcome').style.display = 'none';
+  document.getElementById('demographics').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+
+function submitDemographics() {
+  userDemographics.age = document.getElementById('demoAge').value;
+  userDemographics.gender = document.getElementById('demoGender').value;
+  userDemographics.sector = document.getElementById('demoSector').value;
+
+  document.getElementById('demographics').style.display = 'none';
   document.getElementById('quiz').style.display = 'block';
   showQuestion();
+}
+
+function submitToSheets(scores, ranked) {
+  if (hasAlreadySubmitted()) return; // Don't submit twice
+
+  const agreement = calculateLawsAgreement();
+  const payload = {
+    age: userDemographics.age,
+    gender: userDemographics.gender,
+    sector: userDemographics.sector,
+    econ: scores.econ.toFixed(1),
+    auth: scores.auth.toFixed(1),
+    relig: scores.relig.toFixed(1),
+    def: scores.def.toFixed(1),
+    ident: scores.ident ? scores.ident.toFixed(1) : '',
+    camp: scores.camp ? scores.camp.toFixed(1) : '',
+    topParty: ranked[0].name,
+    topMatchPct: ranked[0].match,
+    coalitionAgree: agreement.coalition,
+    oppositionAgree: agreement.opposition,
+    priority1: axisOrder[0],
+    priority2: axisOrder[1],
+    priority3: axisOrder[2],
+    priority4: axisOrder[3],
+    answersRaw: JSON.stringify(answers),
+    lawAnswersRaw: JSON.stringify(lawAnswers),
+    deviceId: getDeviceId()
+  };
+
+  // Send async, don't block UI
+  fetch(SHEETS_API, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(() => {
+    localStorage.setItem('matzpen_submitted', 'true');
+  }).catch(err => {
+    console.log('Sheet submission error:', err);
+  });
 }
 
 function showQuestion() {
@@ -2220,6 +2396,9 @@ function showResults() {
   // Save for share card
   savedScores = scores;
   savedBest = ranked[0];
+
+  // Submit to Google Sheets
+  submitToSheets(scores, ranked);
 
   // Save anonymous stats
   saveStats(scores, ranked[0]);
